@@ -1,0 +1,341 @@
+---
+output: github_document
+html_preview: false
+---
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 6,
+  dpi = 300,
+  tidy = TRUE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "inst/README-"
+)
+```
+
+## `NocMigR2` package
+___
+
+*Replacing earlier version [NocMigR](https://github.com/mottensmann/NocMigR)*
+
+___
+
+This package provides workflows for processing sound files, especially comprising bird vocalisations sampled with autonomous recording devices (e.g., `NocMig`, `NFC` and `AudioMoth` recordings), with a main emphasis on (semi-)automatising the the detection and labelling of events with proper times-stamps. Resulting data can then be reviewed and validated using [Audacity](https://www.audacityteam.org/) (recommended version 3.0.2).
+
+Among others, this package relies on the following libraries:
+
+**R packages**:
+    [bioacoustics](https://cran.r-project.org/package=bioacoustics),
+    [seewave](https://cran.r-project.org/package=seewave),
+    [tuneR](https://cran.r-project.org/package=tuneR),
+    [Warbler](https://cran.r-project.org/package=warbleR)
+    
+**python**:
+    [audioop](https://docs.python.org/3/library/audioop.html),
+    [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer),
+    [pydub](https://github.com/jiaaro/pydub)
+
+To install the package, use [devtools](https://github.com/r-lib/devtools):
+
+```{r, eval=FALSE, comment="Install"}
+devtools::install_github("mottensmann/NocMigR2")
+```
+
+Load the package once installed:
+
+```{r, warning=FALSE, results='hide', comment="load NocMigR2"}
+library(NocMigR2)
+```
+
+### Preprocessing & formatting
+___
+##### `rename_recording`
+***
+
+*Rename audio files using a string of the form `YYYYMMDD_HHMMSS` that denotes the date and time of the recording start.*
+
+This convenient format is for example used by the  [AudioMoth](https://www.openacousticdevices.info/)), whereas other popular recording devices (e.g. PCM recorders by Olympus, Tascam and alike) typically use rather uninformative naming schemes (date + chronological number at best). `rename_recording` retrieves the `ctime` (creation time) from audio files to compose a date_time (`'YYYYMMDD_HHMMSS'`}) string. Note, audio recorders vary in the way individual audio files are saved when in continuous recording mode. Supported options are:
+
+(1) `ctime = 'first'`: (e.g. Olympus LS-3)
+Each audio file shares the ctime of the **first** file. Therefore *ctime* of subsequent recordings are easily computed.
+
+(2) `ctime = 'each'`: (e.g. Sony PCM D100)
+*Each* audio file is handled individually and therefore saved with unique *ctime*. 
+
+```{r, comment="rename", results='markup'}
+## Example: 
+## new.name corresponds to creation time of package!
+## -------
+rename_recording(
+  ## path to file(s)
+  path = system.file("extdata", package = "NocMigR2"),
+  ## specify how to handle ctimes
+  ctime = "first",
+  ## file extension
+  format = "wav",
+  ## only show new name
+  .simulate = TRUE)
+```
+
+##### `dusk2dawn`
+***
+
+Retrieve time of dusk and dawn for a given location using the [suncalc](https://github.com/datastorm-open/suncalc/) package:
+
+```{r, comment="dusk2dawn", results='markup'}
+## Example
+## -------
+dusk2dawn(
+  date = Sys.Date(), ## Date
+  lat = 52.032090, ## Latitude in decimal degrees
+  lon = 8.516775, # Longitude in decimal degrees
+  tz = "CET") # Time zone
+```
+
+##### `NocMig_meta`
+***
+
+Create header used to add a comment to observation lists [ornitho](https://www.ornitho.de/):
+
+Composing a string describing a past **NocMig** night following recommendations by [Schütze *et al* 2022 (HGON)](https://www.hgon.de/fileadmin/HGONContent/03-Beobachten/07-NocMig/NocMig_Methodenstandardisierung_V1.pdf) using: 
+
+* [Bright Sky](https://brightsky.dev/) (de Maeyer 2020) to retrieve weather data for a given location.
+* [suncalc](https://github.com/datastorm-open/suncalc/) to retrieve time of dusk and dawn
+
+```{r, comment="NocMig_meta", results='markup'}
+## usage
+## -------
+NocMig_meta(date = Sys.Date() - 1, lat = 52.032, lon = 8.517)
+```
+##### `BirdNET_species.list`
+*** 
+
+Create custom species list for target species:
+
+Filters the extensive [BirdNET_GLOBAL_6K_V2.4_Labels](https://github.com/kahst/BirdNET-Analyzer/tree/main/checkpoints/V2.4) file for selected target species. Target species can be selected based on scientific species names or common species names in all languages currently supported by [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer). 
+
+```{r, results='markup'}
+## examples
+## --------
+BirdNET_species.list(
+  ## target species
+  names = c("Glaucidium passerinum", "Bubo bubo"),
+  sciNames = TRUE,
+  BirdNET_path = "../BirdNET-Analyzer/",
+  species_list = "Insert Path here ... ",
+  ## only show df, not exporting to text file
+  .write_text = FALSE) 
+
+BirdNET_species.list(
+  names = c("Sperlingskauz", "Uhu"),
+  lang = "de",
+  sciNames = FALSE,
+  BirdNET_path = "../BirdNET-Analyzer/",
+  species_list = "Insert Path here ... ",
+  ## only show df, not exporting to text file
+  .write_text = FALSE)
+```
+
+### Analyses using `BirdNET-Analyzer`
+___
+
+**Using BirdNET-Analyzer to process audio data**
+
+##### Prerequisites:
+
+###### On windows:
+
+* Installing **Ubuntu** environment. **Windows Subsystem for Linux (WSL)** works well for this purpose. see [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) for explanations
+* Setup **BirdNET-Analyzer** following the [Setup Ubuntu](https://github.com/kahst/BirdNET-Analyzer#33-setup-ubuntu) section
+
+Then `bash` code-chunks (shown below) can be executed using WSL. Pre- and post processing stays within R.  
+
+
+###### On Linux (Raspberry Pi):
+
+* Setup **BirdNET-Analyzer** following the [Setup Ubuntu](https://github.com/kahst/BirdNET-Analyzer#33-setup-ubuntu) section
+
+Then, using [RStudio](https://www.rstudio.com/products/rstudio/download/) `analyzer.py` can be used by simply inserting `bash` code-chunks within RMarkdown documents!
+
+###### `analyzer.py` 
+***
+
+Using `analyzer.py` for detecting signals:
+
+* Use the sample audio file for demonstration purposes:
+
+```{r, results='hide'}
+## create temp folder
+dir.create("test_folder") 
+
+## Copy sample 
+sample <- system.file("extdata", "20211220_064253.wav", package = "NocMigR2")
+file.copy(from = sample,
+          to = file.path("test_folder", "20211220_064253.wav"))
+```
+
+* Run `analyzer.py` (See documentation [here](https://github.com/kahst/BirdNET-Analyzer#41-usage-cli))
+
+```{bash, eval = FALSE}
+## bash
+## -----------------------------------
+## Set working dir to BirdNET-Analyzer
+cd PATH TO BirdNET-Analyzer
+```
+
+```{bash, eval = FALSE}
+## bash
+## ---------------
+## run analyze.py
+python3 analyze.py --i /test_folder --o /test_folder --min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
+```
+
+#### `BirdNET`
+
+The function `BirdNET` (see *?BirdNET* for details) does the following:
+
+(1) Reshape audacity labels created by `analyze.py` (with `--rtype 'audacity'`) to include the event time estimated from file names:  [Creates `BirdNET.labels.txt` for each `BirdNET.results.txt` file] 
+(2) Write records to BirdNET.xlsx as a template to simplify inspection and verification of the records.
+
+```{r, eval=FALSE}
+df <- BirdNET(path = "test_folder/",
+              ## adding optional meta data
+              meta = BirdNET_meta(
+                Location = "Place A",
+                Lat = 52,
+                Lon = 8,
+                Device = "Recorder B",
+                Micro = "Mic C",
+                ## analyze.py settings
+                Min_conf = 0.7,
+                Overlap = 0,
+                Sensitivity = 1.0,
+                Slist = "BirdNET_V2.4"))
+```
+
+```{r, results='markup'}
+## load and show overview
+## overview
+str(openxlsx::read.xlsx("test_folder/BirdNET.xlsx", "Records"))
+str(openxlsx::read.xlsx("test_folder/BirdNET.xlsx", "Meta"))
+```
+___
+
+##### `BirdNET_extract`
+
+Extract detections and export them as wave files. For easier access to verify records files are named as 'Species_Date_Time.WAV' and corresponding hyperlinks are inserted in the .xlsx file created with `BirdNET()` (see below).
+
+```{r, eval=FALSE}
+## extract events and add hyperlink
+BirdNET_extract(path = "test_folder", hyperlink = TRUE) 
+```
+
+```{r, results='markup'}
+## show created dirs 
+list.dirs("test_folder/extracted/", recursive = F)
+
+## show content for Eurasian Pygmy-OWl 
+list.files("test_folder/extracted/Eurasian Pygmy-Owl/")
+```
+
+* Content of `xlsx file`
+
+Summary table of BirdNET detection ready for manual review & verification (attributes: `Verification`, `Correction`, `Comment`). Automatically provided are BirdNET annotations (Taxon) along with the corresponding confidence score (`Score`) and event time (`T1` = start, `T2` = end). Manually recovered events may be added to the same file by setting `Detector = 'Manual'` or alike}
+
+```{r, echo=FALSE, fig.align='center', dpi=300, out.width = "900px", fig.cap="Screenshot: xlsx file. Fields to enter manually shown in bold"}
+knitr::include_graphics("inst/extdata/xlsx.png")
+```
+
+##### `BirdNET_archive`
+___
+
+**Under development**
+
+Archive **verified** records (see screenshot above) using `BirdNET_archive`:
+
+```{r, results='markup'}
+out <- BirdNET_archive(
+  BirdNET_results = "test_folder/BirdNET.xlsx",
+  path2archive = "test_folder",
+  db = "test_folder/db.xlsx",
+  trash = FALSE,
+  NocMig = FALSE,
+  keep.false = TRUE)
+str(out)
+
+## show folder structure
+list.files("test_folder/")
+```
+
+
+___
+
+#### Optional functions 
+___
+
+*Mainly a backup from previous package [NocMigR](https://github.com/mottensmann/NocMigR))*
+
+##### `find_events` & `extract_events`
+***
+
+Signal detection based on SNR (signal to noise ratio) wrapping `threshold_detection()` of the [bioacoustics](https://cran.r-project.org/package=bioacoustics) package.
+Additional parameters allow further fine-tuning by specifying frequency characteristics and call length of targets of interest. *Note: For bird calls using [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer) is the recommended alternative*. Detections are exported as Audacity labels using [seewave](https://rug.mnhn.fr/seewave/):
+
+```{r, fig.align='center', results='markup'}
+TD <- find_events(wav.file = "test_folder/20211220_064253.wav",
+                  audacity = TRUE, # Write audacity labels
+                  threshold = 8, # SNR in db
+                  min_dur = 20, # min length in ms
+                  max_dur = 300, # max length in ms
+                  LPF = 5000, # low-pass filter at 500 Hz
+                  HPF = 1000) # high-pass filter at 4 kHz
+
+## Review events 
+head(TD$data$event_data[,c("filename", "starting_time", "duration", "freq_max_amp")])
+```
+
+If `audacity = TRUE` a file with labels for reviewing events in `Audacity` is created (wrapping `seewave::write.audacity()`).
+
+```{r, echo=FALSE, fig.align='center', dpi=300, out.width = "900px", fig.cap="Screenshot: Audacity labels"}
+knitr::include_graphics("inst/extdata/sample.png")
+```
+
+* Extract detected events from raw audio file 
+
+Refines the output of `find_events` by first adding a buffer (default 1 second on both sides of the event) and subsequently merging overlapping selections (detections likely belonging to the same calling event) to make the output more pretty. Additionally, allows to filter based on expected frequencies (i.e., checks maximum amplitude frequency is within the frequency band defined by `LPF` and `HPF`). Returns a shortened audio file containing only the selected events (e.g, *"20211220_064253_extracted.txt"* along with the corresponding Audacity labels *"20211220_064253_extracted.txt"*)
+
+```{r, results='markup'}
+## extract events based on object TD
+df <- extract_events(threshold_detection = TD, 
+                     path = "test_folder",
+                     format = "wav",
+                     LPF = 4000,
+                     HPF = 1000,
+                     buffer = 1)
+```
+
+##### `split_wave`:
+***
+
+Basic function to split large audio files in chunks. *Internally calls the python library [pydub](https://github.com/jiaaro/pydub) with [reticulate](https://rstudio.github.io/reticulate/).*: 
+
+Short audio segments are saved in a subfolder named 'split'.
+
+```{r, eval=T, comment="split_wave", results='markup'}
+## split in segments
+split_wave(file = "20211220_064253.wav", # audio file
+           path = "test_folder/", # folder 
+           segment = 3) # cut in 3 sec segments
+
+## show files
+list.files("test_folder/split/")
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+## delete folder
+unlink("test_folder", recursive = T)
+```
