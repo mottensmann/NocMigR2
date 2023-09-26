@@ -7,7 +7,8 @@
 NocMig_process(
   path = "E:/NocMig",
   folder = NULL,
-  format = c("WAV", "wav", "mp3", "MP3"),
+  format = c("wav", "mp3"),
+  rename = TRUE,
   ctime = c("first", "each"),
   lat = 52.03209,
   lon = 8.516775
@@ -19,6 +20,8 @@ NocMig_process(
 \item{folder}{folder to process}
 
 \item{format}{audio format. Supported are \code{'wav'} and \code{'mp3'}}
+
+\item{rename}{logical. defaults to \code{TRUE}}
 
 \item{ctime}{(1) Specify \code{'first'} when all recordings share ctime of the first recording (e.g. \strong{Olympus LS recorder}). (2) Specify \code{'each'} when recordings have unique ctime (e.g. \strong{Sony PCM recorder})}
 

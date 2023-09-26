@@ -11,6 +11,7 @@ BirdNET_extract(
   nmax = NULL,
   sec = 1,
   output = NULL,
+  approx_snr = TRUE,
   hyperlink = F
 )
 }
@@ -26,6 +27,8 @@ BirdNET_extract(
 \item{sec}{seconds before and after target to extract}
 
 \item{output}{path to write wav files}
+
+\item{approx_snr}{logical. trying to approximate SNR levels. defaults to TRUE}
 
 \item{hyperlink}{optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.}
 }

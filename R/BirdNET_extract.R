@@ -6,7 +6,6 @@
 #' (2) Reshape output using function BirdNET (this package)
 #' (3) Ensure wav files, BirdNET_results.txt and BirdNET.xlsx files share the same path
 #'
-#'
 #' @param path path. Relative path will be converted to absolute path.
 #' @param output path to write wav files
 #' @param taxon optional. select target taxa
@@ -14,6 +13,7 @@
 #' @param nmax maximum number of segments per taxon. default 10
 #' @param sec seconds before and after target to extract
 #' @param hyperlink optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.
+#' @param approx_snr logical. trying to approximate SNR levels. defaults to TRUE
 #'
 #' @export
 #'
@@ -23,6 +23,7 @@ BirdNET_extract <- function(path = NULL,
                             nmax = NULL,
                             sec = 1,
                             output = NULL,
+                            approx_snr = TRUE,
                             hyperlink = F) {
   if (!dir.exists(path)) stop("provide valid path")
   path <- tools::file_path_as_absolute(path)
@@ -140,6 +141,27 @@ BirdNET_extract <- function(path = NULL,
                         startCol = 12,
                         colNames = FALSE,
                         startRow = 2)
+    openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+  }
+
+  if (isTRUE(approx_snr)) {
+
+    cat("Compute SNRs ... \n")
+    SNR <- BirdNET_snr(path = path)
+    cat("done\n")
+    SNR <- dplyr::left_join(data.frame(sound.files = basename(out)),
+                                       SNR, by = "sound.files")
+    SNR <- data.frame(SNR = floor(SNR$SNR))
+    ## open workbook as it is ...
+    wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
+
+    ## insert in wb ...
+    openxlsx::writeData(wb = wb,
+                        sheet = 1,
+                        x = SNR,
+                        startCol = 13,
+                        colNames = TRUE,
+                        startRow = 1)
     openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
   }
 }

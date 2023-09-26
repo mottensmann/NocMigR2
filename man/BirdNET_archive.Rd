@@ -7,7 +7,6 @@
 BirdNET_archive(
   BirdNET_results = NULL,
   path2archive = NULL,
-  trash = TRUE,
   NocMig = TRUE,
   keep.false = FALSE,
   db = NULL
@@ -17,8 +16,6 @@ BirdNET_archive(
 \item{BirdNET_results}{path to verified BirdNET.xlsx file}
 
 \item{path2archive}{path to archive audio data}
-
-\item{trash}{logical. Delete raw files? defaults to FALSE}
 
 \item{NocMig}{logical}
 
@@ -31,7 +28,7 @@ Archive validated records
 }
 \details{
 (1) Load table containing validated data
-(2) Copy extracted events for future references to local database, distinguishing between true and false positives
+(2) Copy extracted events for future references to local database, distinguishing between true and false positives and unverified events (e.g., species not of primary interest)
 (3) Providing NocMig summary if \code{NocMig = TRUE} as hourly totals per species
 (4) Assembling string denoting hourly counts per species ready for submitting observation lists to ornitho
 }
