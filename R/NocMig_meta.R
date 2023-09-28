@@ -38,8 +38,17 @@ NocMig_meta <- function(
 
   ## get data and convert to data frame
   ## ---------------------------------------------------------------------------
-  df1 <- as.data.frame(jsonlite::fromJSON(URL1)$weather[,c(1:15,17)])
-  df2 <- as.data.frame(jsonlite::fromJSON(URL2)$weather[,c(1:15,17)])
+  df1 <- try(as.data.frame(jsonlite::fromJSON(URL1)$weather[,c(1:15,17)]))
+  df2 <- try(as.data.frame(jsonlite::fromJSON(URL2)$weather[,c(1:15,17)]))
+
+  if (methods::is(df1, "try-error") | methods::is(df2, "try-error")) {
+    ## try again after sleeping for a few seconds to avoid server issues
+    cat("api.brightsky did not respond. Retry in 10s ...")
+    Sys.sleep(time = 10)
+    df1 <- (as.data.frame(jsonlite::fromJSON(URL1)$weather[,c(1:15,17)]))
+    df2 <- (as.data.frame(jsonlite::fromJSON(URL2)$weather[,c(1:15,17)]))
+    cat("done")
+  }
 
   ## merge data frames
   ## ---------------------------------------------------------------------------
