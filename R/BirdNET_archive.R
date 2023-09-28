@@ -42,7 +42,7 @@ BirdNET_archive <- function(
         col_names = F,
         show_col_types = F)
       nocmig.str1 <- (trimws(paste0(nocmig.meta.string[1,], collapse = "")))
-      nocmig.str2 <- (trimws(paste0(nocmig.meta.string[1,], collapse = "")))
+      nocmig.str2 <- (trimws(paste0(nocmig.meta.string[2,], collapse = "")))
     }
   }
 
@@ -51,8 +51,9 @@ BirdNET_archive <- function(
   df <- dplyr::filter(data_df, Verification %in% c("T", "TRUE", "true postive"))
   if (isTRUE(NocMig)) {
     ## ignore what is not considered NocMig or NFC --> Local
-    df <- df[-which(df$Comment == "Local"),]
-
+    if (!all(is.na(df$Comment))) {
+      if (any(df$Comment == "Local")) df <- df[-which(df$Comment == "Local"),]
+    }
   }
   if (nrow(df) > 0) {
     ## check for multiple events assigned to same individual
