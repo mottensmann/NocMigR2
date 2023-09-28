@@ -23,7 +23,12 @@ BirdNET_man_detec <- function(path) {
     db2 <- readxl::read_xlsx(path = file.path(path, "BirdNET2.xlsx"), sheet = 1)
 
     if (any(duplicated(db1))) warning("Database contains duplicates!")
-    db_new <- rbind(db1, db2)
+    db_new <- try(rbind(db1, db2))
+    if (!methods::is(db_new, "try-error")) {
+      db_new <- dplyr::bind_rows(db1, db2)
+    }
+
+
 
     if (any(duplicated(db_new))) {
       stop("Database already contains entries. Skip")

@@ -331,7 +331,7 @@ BirdNET_extract2 <- function(path = NULL,
                              nmax = NULL,
                              sec = 1,
                              output = NULL,
-                             approx_snr = TRUE,
+                             approx_snr = FALSE,
                              hyperlink = T) {
   if (!dir.exists(path)) stop("provide valid path")
   path <- tools::file_path_as_absolute(path)
