@@ -1,9 +1,10 @@
 #' Append manually recovered detections to existing xlsx file
 #'
 #' @inheritParams BirdNET
+#' @inheritParams BirdNET_extract
 #' @export
 #'
-BirdNET_man_detec <- function(path) {
+BirdNET_man_detec <- function(path, spectro = FALSE) {
 
 
   ## check for manual detections
@@ -12,7 +13,7 @@ BirdNET_man_detec <- function(path) {
 
   if (nrow(Records) >= 1) {
     openxlsx::write.xlsx(x = Records, file = file.path(path, "BirdNET2.xlsx"), overwrite = T)
-    BirdNET_extract2(path = path)
+    BirdNET_extract2(path = path, spectro = spectro)
 
     ## now append to BirdNET.xlsx and delete BirdNET2.xlsx
     ## read db if existing ...
@@ -27,7 +28,6 @@ BirdNET_man_detec <- function(path) {
     if (!methods::is(db_new, "try-error")) {
       db_new <- dplyr::bind_rows(db1, db2)
     }
-
 
 
     if (any(duplicated(db_new))) {

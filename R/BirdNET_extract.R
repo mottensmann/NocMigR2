@@ -13,7 +13,8 @@
 #' @param nmax maximum number of segments per taxon. default 10
 #' @param sec seconds before and after target to extract
 #' @param hyperlink optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.
-#' @param approx_snr logical. trying to approximate SNR levels. defaults to TRUE
+#' @param approx_snr logical. trying to approximate SNR levels. defaults to FALSE
+#' @param spectro logical. export spectro using \code{\link[bioacoustics]{spectro}} defaults to FALSE
 #'
 #' @export
 #'
@@ -23,8 +24,13 @@ BirdNET_extract <- function(path = NULL,
                             nmax = NULL,
                             sec = 1,
                             output = NULL,
-                            approx_snr = TRUE,
+                            approx_snr = FALSE,
+                            spectro = FALSE,
                             hyperlink = F) {
+
+  ## binding for global variables to please checks ...
+  name <- NA
+
   if (!dir.exists(path)) stop("provide valid path")
   path <- tools::file_path_as_absolute(path)
 
@@ -121,12 +127,43 @@ BirdNET_extract <- function(path = NULL,
     tuneR::writeWave(
       object = event,
       filename = name)
+
+    if (isTRUE(spectro)) {
+      ## if stereo average to mon
+      if (isTRUE(event@stereo)) {
+        event <- tuneR::stereo(tuneR::mono(event, "both"),
+                               tuneR::mono(event, "both"))
+      }
+
+      # saves plot
+      dir.create(file.path(dirname(name), "png"))
+      grDevices::png(
+        file.path(file.path(dirname(name), "png"),
+                  stringr::str_replace(basename(name), ".WAV", ".png")),
+        width = 1200, height = 430, res = 72)
+
+      seewave::spectro(wave = event,
+                       wl = 1024,
+                       grid = F,
+                       ovlp = 90,
+                       fastdisp = T,
+                       scale = F,
+                       flab = "",
+                       tlab = "",
+                       flim = c(2,8),
+                       colbg = "white",
+                       main = basename(name),
+                       palette = seewave::reverse.gray.colors.2)
+      grDevices::dev.off()
+    }
     return(name)
   })
 
-  ## put hyperlink in excel sheet?
+
+
+  ## put hyperlink(s) in excel sheet?
   ## -------------------------------------------------------------------------
-  if (isTRUE(hyperlink)) {
+  if (isTRUE(hyperlink) & isFALSE(spectro)) {
 
     ## open workbook as it is ...
     wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
@@ -142,6 +179,38 @@ BirdNET_extract <- function(path = NULL,
                         colNames = FALSE,
                         startRow = 2)
     openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+  } else if (isTRUE(hyperlink) & isTRUE(spectro))  {
+
+    ## open workbook as it is ...
+    wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
+
+    ## create hyperlink ... check order?
+    wav.link <- out; class(wav.link) <- "hyperlink"
+
+    ## insert in wb ...
+    openxlsx::writeData(wb = wb,
+                        sheet = 1,
+                        x = wav.link,
+                        startCol = 12,
+                        colNames = FALSE,
+                        startRow = 2)
+
+    ## create hyperlink ... check order?
+
+    png.link <- data.frame(
+      png = file.path(file.path(dirname(out), "png"),
+                      stringr::str_replace(basename(out), ".WAV", ".png")))
+    class(png.link$png) <- "hyperlink"
+
+    ## insert in wb ...
+    openxlsx::writeData(wb = wb,
+                        sheet = 1,
+                        x = png.link,
+                        startCol = 13,
+                        colNames = TRUE,
+                        startRow = 1)
+
+    openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
   }
 
   if (isTRUE(approx_snr)) {
@@ -150,7 +219,7 @@ BirdNET_extract <- function(path = NULL,
     SNR <- BirdNET_snr(path = path)
     cat("done\n")
     SNR <- dplyr::left_join(data.frame(sound.files = basename(out)),
-                                       SNR, by = "sound.files")
+                            SNR, by = "sound.files")
     SNR <- data.frame(SNR = floor(SNR$SNR))
     ## open workbook as it is ...
     wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
@@ -159,7 +228,7 @@ BirdNET_extract <- function(path = NULL,
     openxlsx::writeData(wb = wb,
                         sheet = 1,
                         x = SNR,
-                        startCol = 13,
+                        startCol = ncol(openxlsx::readWorkbook(file.path(path, "BirdNET.xlsx"))) + 1,
                         colNames = TRUE,
                         startRow = 1)
     openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
