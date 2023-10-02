@@ -10,7 +10,8 @@ split_wave(
   segment = 600,
   downsample = NULL,
   mono = TRUE,
-  rescale = NULL
+  rescale = NULL,
+  discard_input = FALSE
 )
 }
 \arguments{
@@ -25,12 +26,17 @@ split_wave(
 \item{mono}{logical. By default coerces to mono.}
 
 \item{rescale}{optional. allows to resacale the wav to a new bit rate (e.g., "8", "16", "24").}
+
+\item{discard_input}{logical. Allows to discard input file after transformation. Defaults to \code{FALSE}}
 }
 \value{
 none
 }
 \description{
-Cuts audio file into segments for processing and applies re-sampling and mono conversion if needed. Requires reticulate and pydub (python)
+Cuts audio file into segments for processing
+}
+\details{
+Optional parameters \code{downsample}, \code{mono} & \code{rescale} require  \code{\link[reticulate]{source_python}} and several python libraries (\code{source_python}, \code{audioop} & \code{wave}).
 }
 \examples{
 \dontrun{
