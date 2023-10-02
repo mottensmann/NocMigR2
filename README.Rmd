@@ -193,6 +193,14 @@ cd PATH TO BirdNET-Analyzer
 python3 analyze.py --i /test_folder --o /test_folder --min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
 ```
 
+```{bash}
+## Example RStudio on Raspberry Pi 4
+## -----------------------------------------------------------------------------
+cd ../BirdNET-Analyzer
+python3 analyze.py --i ../NocMigR2/test_folder --o ../NocMigR2/test_folder --min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
+```
+
+
 #### `BirdNET`
 
 The function `BirdNET` (see *?BirdNET* for details) does the following:
@@ -200,7 +208,7 @@ The function `BirdNET` (see *?BirdNET* for details) does the following:
 (1) Reshape audacity labels created by `analyze.py` (with `--rtype 'audacity'`) to include the event time estimated from file names:  [Creates `BirdNET.labels.txt` for each `BirdNET.results.txt` file] 
 (2) Write records to BirdNET.xlsx as a template to simplify inspection and verification of the records.
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 df <- BirdNET(path = "test_folder/",
               ## adding optional meta data
               meta = BirdNET_meta(
@@ -228,7 +236,7 @@ ___
 
 Extract detections and export them as wave files. For easier access to verify records files are named as 'Species_Date_Time.WAV' and corresponding hyperlinks are inserted in the .xlsx file created with `BirdNET()` (see below).
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 ## extract events and add hyperlink
 BirdNET_extract(path = "test_folder", hyperlink = TRUE) 
 ```
