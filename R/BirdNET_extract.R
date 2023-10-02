@@ -91,6 +91,14 @@ BirdNET_extract <- function(path = NULL,
     ## find wav file
     ##  ------------------------------------------------------------------------
     wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.results.txt", "WAV")
+    format <- ".WAV"
+
+    if (!file.exists(wav)) {
+      ## check lowercase
+      wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.results.txt", "wav")
+      format <- ".wav"
+    }
+
     if (!file.exists(wav)) stop(wav, "not found")
 
     ##  select event time stamps
@@ -104,7 +112,7 @@ BirdNET_extract <- function(path = NULL,
       paste0(
         xlsx[[r, "Taxon"]], "_",
         trimws(stringr::str_replace_all(
-          as.character(t1), c(":" = "", "-" = "", " " = "_"))), ".WAV"))
+          as.character(t1), c(":" = "", "-" = "", " " = "_"))), format))
 
 
     ## add buffer around event
@@ -139,7 +147,7 @@ BirdNET_extract <- function(path = NULL,
       dir.create(file.path(dirname(name), "png"), showWarnings = FALSE)
       grDevices::png(
         file.path(file.path(dirname(name), "png"),
-                  stringr::str_replace(basename(name), ".WAV", ".png")),
+                  stringr::str_replace(basename(name), format, ".png")),
         width = 1200, height = 430, res = 72)
 
       seewave::spectro(wave = event,
@@ -199,7 +207,7 @@ BirdNET_extract <- function(path = NULL,
 
     png.link <- data.frame(
       png = file.path(file.path(dirname(out), "png"),
-                      stringr::str_replace(basename(out), ".WAV", ".png")))
+                      stringr::str_replace(basename(out), format, ".png")))
     class(png.link$png) <- "hyperlink"
 
     ## insert in wb ...
