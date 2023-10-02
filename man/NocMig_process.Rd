@@ -5,19 +5,20 @@
 \title{Process NocMig session for downstream analysis}
 \usage{
 NocMig_process(
-  path = "E:/NocMig",
-  folder = NULL,
+  parent.folder = "E:/NocMig",
+  child.folder = "",
   format = c("wav", "mp3"),
   rename = TRUE,
   ctime = c("first", "each"),
   lat = 52.03209,
-  lon = 8.516775
+  lon = 8.516775,
+  segment_length = NULL
 )
 }
 \arguments{
-\item{path}{path to NocMig folders}
+\item{parent.folder}{path}
 
-\item{folder}{folder to process}
+\item{child.folder}{optional. defaults to \code{NULL}}
 
 \item{format}{audio format. Supported are \code{'wav'} and \code{'mp3'}}
 
@@ -28,6 +29,8 @@ NocMig_process(
 \item{lat}{latitude in decimal degrees}
 
 \item{lon}{longitude in decimal degrees}
+
+\item{segment_length}{optional numeric value. If specified, function \code{\link{split_wave}} is used to to segmenti long audio files in shorter segments. defaults to \code{NULL}}
 }
 \description{
 Process NocMig session for downstream analysis

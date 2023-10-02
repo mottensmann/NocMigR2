@@ -39,7 +39,6 @@
 split_wave <- function(
     path = NULL,
     file = NULL,
-    replace = FALSE,
     segment = 600,
     downsample = NULL,
     mono = TRUE,
@@ -169,10 +168,7 @@ split_wave <- function(
 
   if (isTRUE(discard_input)) {
     unlink(wave_file.copy)
-  } else {
-    check.rename <- file.rename(from = wave_file.copy,
-                                to = wave_file)
-
+  } else if (isFALSE(discard_input)) {
+    check.rename <- file.rename(wave_file.copy, wave_file)
   }
-
 }
