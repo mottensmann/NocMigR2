@@ -39,6 +39,8 @@ BirdNET_man_detec <- function(path, spectro = FALSE) {
 
     ## create hyperlink ... check order?
     class(db2$File) <- "hyperlink"
+    class(db2$png) <- "hyperlink"
+
 
     wb <- openxlsx::loadWorkbook(db1)
     openxlsx::writeData(wb = wb,

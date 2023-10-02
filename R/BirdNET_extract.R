@@ -77,11 +77,11 @@ BirdNET_extract <- function(path = NULL,
   ## create folder per taxon
   ## -------------------------------------------------------------------------
   if (is.null(output)) output <- file.path(path, "extracted")
-  if (!dir.exists(output)) dir.create(output)
+  if (!dir.exists(output)) dir.create(output, showWarnings = FALSE)
 
   silent <- sapply(unique(xlsx[["Taxon"]]), function(one_taxon) {
     if (!dir.exists(file.path(output, one_taxon))) {
-      dir.create(file.path(output, one_taxon))
+      dir.create(file.path(output, one_taxon), showWarnings = FALSE)
     }})
 
   ## 3.) Extract ...
@@ -136,7 +136,7 @@ BirdNET_extract <- function(path = NULL,
       }
 
       # saves plot
-      dir.create(file.path(dirname(name), "png"))
+      dir.create(file.path(dirname(name), "png"), showWarnings = FALSE)
       grDevices::png(
         file.path(file.path(dirname(name), "png"),
                   stringr::str_replace(basename(name), ".WAV", ".png")),

@@ -1,7 +1,10 @@
 #' Simple function to split large audio into segments
 #'
 #' @description
-#' Cuts audio file into segments for processing and applies re-sampling and mono conversion if needed. Requires reticulate and pydub (python)
+#' Cuts audio file into segments for processing
+#'
+#' @details
+#' Optional parameters \code{downsample}, \code{mono} & \code{rescale} require  \code{\link[reticulate]{source_python}} and several python libraries (\code{source_python}, \code{audioop} & \code{wave}).
 #'
 #' @param path path.
 #' @param file file name.
@@ -9,6 +12,7 @@
 #' @param downsample optional. allows to downsample to a new sampling rate in Hz.
 #' @param mono logical. By default coerces to mono.
 #' @param rescale optional. allows to resacale the wav to a new bit rate (e.g., "8", "16", "24").
+#' @param discard_input logical. Allows to discard input file after transformation. Defaults to \code{FALSE}
 #' @return none
 #' @examples
 #' \dontrun{
@@ -32,40 +36,54 @@
 #'
 #' @export
 #'
-split_wave <- function(path = NULL,
-                       file = NULL,
-                       segment = 600,
-                       downsample = NULL,
-                       mono = TRUE,
-                       rescale = NULL) {
+split_wave <- function(
+    path = NULL,
+    file = NULL,
+    replace = FALSE,
+    segment = 600,
+    downsample = NULL,
+    mono = TRUE,
+    rescale = NULL,
+    discard_input = FALSE) {
 
-  ## check if reticulate is available
-  ## ---------------------------------------------------------------------------
-  rlang::check_installed("reticulate", reason = "to use `split_wave()`")
+
   #format <- match.arg(format)
   ## define file name
   wave_file <- file.path(path, file)
 
-  ## check python libraries are available
-  if (interactive()) {
-    ## try to load ...
-    check.pydub <- try(reticulate::import(module = "pydub", delay_load = TRUE))
-    if (class(check.pydub)[1] == "try-error") {
-      stop("pydub is missing. Try to install with reticulate::py_install('pydub')\n")
-    }
-    ## try to load ...
-    check.audioop <- try(reticulate::import(module = "audioop", delay_load = TRUE))
-    if (class(check.audioop)[1] == "try-error") {
-      stop("audioop is missing. Try to install with reticulate::py_install('audioop')\n")
-    }
-    ## try to load ...
-    check.wave <- try(reticulate::import(module = "wave", delay_load = TRUE))
-    if (class(check.wave)[1] == "try-error") {
-      stop("wave is missing. Try to install with reticulate::py_install('wave')\n")
-    }
-  }
+  ## rename wave_file before processing to avoid issues when segements are saved
+  ## in the same folder --> rename afterwards
+  wave_file.copy <-
+    stringr::str_replace(wave_file,
+                         paste0(".", tools::file_ext(wave_file)),
+                         paste0(".copy.", tools::file_ext(wave_file)))
 
+  check.rename <- file.rename(from = wave_file,
+                              to = wave_file.copy)
+
+  #### downsample ####
   if (!is.null(downsample)) {
+    ## check if reticulate is available
+    rlang::check_installed("reticulate", reason = "to use `split_wave()`")
+    ## check python libraries are available
+    if (interactive()) {
+      ## try to load ...
+      check.pydub <- try(reticulate::import(module = "pydub", delay_load = TRUE))
+      if (class(check.pydub)[1] == "try-error") {
+        stop("pydub is missing. Try to install with reticulate::py_install('pydub')\n")
+      }
+      ## try to load ...
+      check.audioop <- try(reticulate::import(module = "audioop", delay_load = TRUE))
+      if (class(check.audioop)[1] == "try-error") {
+        stop("audioop is missing. Try to install with reticulate::py_install('audioop')\n")
+      }
+      ## try to load ...
+      check.wave <- try(reticulate::import(module = "wave", delay_load = TRUE))
+      if (class(check.wave)[1] == "try-error") {
+        stop("wave is missing. Try to install with reticulate::py_install('wave')\n")
+      }
+    }
+
     ## down sample and save in temp folder
     temp.dir <- file.path(path, "temp")
     if (!dir.exists(temp.dir)) dir.create(temp.dir)
@@ -78,19 +96,21 @@ split_wave <- function(path = NULL,
     reticulate::source_python(
       system.file("python", "resample_wave_mono.py", package = "NocMigR"))
     cat("\nDownsampling of", file,  "to", downsample, "Hz...\t")
+
+    #### mono conversion ####
     if (mono == TRUE) {
-      check <- resample_wave_mono(wave_file, new_wave_file, downsample)
+      check <- resample_wave_mono(wave_file.copy, new_wave_file, downsample)
     } else {
-      check <- resample_wave_stereo(wave_file, new_wave_file, downsample)
+      check <- resample_wave_stereo(wave_file.copy, new_wave_file, downsample)
     }
     ## check that scripts produced output
-    wave_file <- new_wave_file
+    wave_file.copy <- new_wave_file
     if (check == FALSE) stop("Python error")
     cat("done\n")
   }
 
-  ## read header of wave file
-  audio <- tuneR::readWave(filename = wave_file, header = TRUE)
+  #### read header of wave file ####
+  audio <- tuneR::readWave(filename = wave_file.copy, header = TRUE)
   ## estimate length in seconds
   sec <- audio$samples / audio$sample.rate
   ## define breaks to write audio chunks (keep unique) if
@@ -98,7 +118,7 @@ split_wave <- function(path = NULL,
   breaks <- unique(c(seq(from = 0, to = sec, by = segment), sec))
 
   ## get time from file name
-  meta <- get_DateTime(target = file, target.path = path)
+  meta <- get_DateTime(target = basename(wave_file.copy), target.path = path)
 
   ## define segments
   df <- data.frame(ctime = meta$start,
@@ -113,7 +133,6 @@ split_wave <- function(path = NULL,
     }
   }
 
-
   ## create file names based on ctime of recordings
   df[["new.name"]] <- paste0(substr(df[["ctime"]], 1, 4),
                              substr(df[["ctime"]], 6, 7),
@@ -124,17 +143,22 @@ split_wave <- function(path = NULL,
                              substr(df[["ctime"]], 18, 19),
                              ".wav")
 
-  ## create subfolder `split`
-  if (!dir.exists(file.path(path, "split"))) dir.create(file.path(path, "split"))
-  subfolder <- file.path(path, "split")
+  if (isFALSE(discard_input)) {
+    ## create subfolder `split`
+    if (!dir.exists(file.path(path, "split"))) dir.create(file.path(path, "split"))
+    subfolder <- file.path(path, "split")
+  } else if (isTRUE(discard_input)) {
+    subfolder <- path
+  }
 
   ## save memory
-  rm(list = c("audio", "meta", "sec", "breaks"))
+  #  rm(list = c("audio", "meta", "sec", "breaks"))
   cat("Split ... \n")
 
+  #### extract segments #####
   silent <- pbapply::pblapply(1:nrow(df), function(i) {
     ## read audio
-    audio <- tuneR::readWave(filename = wave_file,
+    audio <- tuneR::readWave(filename = wave_file.copy,
                              from = df[i, "from"],
                              to = df[i, "to"],
                              units = "seconds")
@@ -142,4 +166,13 @@ split_wave <- function(path = NULL,
     rm(audio)
     gc(full = T, verbose = F)
   })
+
+  if (isTRUE(discard_input)) {
+    unlink(wave_file.copy)
+  } else {
+    check.rename <- file.rename(from = wave_file.copy,
+                                to = wave_file)
+
+  }
+
 }

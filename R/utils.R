@@ -288,11 +288,13 @@ BirdNET_labels2results <- function(path) {
       ## replace short names in sophisticated way at some point ...
       dplyr::mutate(Taxon = dplyr::case_when(
         Taxon == "A" ~ "Amsel",
+        Taxon == "Bp" ~ "Baumpieper",
         Taxon == "Br" ~ "Blesshuhn",
         Taxon == "Tr" ~ "Teichhuhn",
         Taxon == "Sd" ~ "Singdrossel",
         Taxon == "R" ~ "Rotkehlchen",
         Taxon == "Rd" ~ "Rotdrossel",
+        Taxon == "Wz" ~ "Waldkauz",
         TRUE ~ Taxon
       ))
   }
@@ -374,11 +376,11 @@ BirdNET_extract2 <- function(path = NULL,
 
   ## create folder per taxon
   if (is.null(output)) output <- file.path(path, "extracted")
-  if (!dir.exists(output)) dir.create(output)
+  if (!dir.exists(output)) dir.create(output, showWarnings = FALSE)
 
   silent <- sapply(unique(xlsx[["Taxon"]]), function(one_taxon) {
     if (!dir.exists(file.path(output, one_taxon))) {
-      dir.create(file.path(output, one_taxon))
+      dir.create(file.path(output, one_taxon), showWarnings = FALSE)
     }})
 
   ## 3.) Extract ...
@@ -418,37 +420,41 @@ BirdNET_extract2 <- function(path = NULL,
     tuneR::writeWave(
       object = event,
       filename = name)
+
+    if (isTRUE(spectro)) {
+      ## if stereo average to mon
+      if (isTRUE(event@stereo)) {
+        event <- tuneR::stereo(tuneR::mono(event, "both"),
+                               tuneR::mono(event, "both"))
+      }
+
+      # saves plot
+      dir.create(file.path(dirname(name), "png"), showWarnings = FALSE)
+      grDevices::png(
+        file.path(file.path(dirname(name), "png"),
+                  stringr::str_replace(basename(name), ".WAV", ".png")),
+        width = 1200, height = 430, res = 72)
+
+      seewave::spectro(wave = event,
+                       wl = 1024,
+                       grid = F,
+                       ovlp = 90,
+                       fastdisp = T,
+                       scale = F,
+                       flab = "",
+                       tlab = "",
+                       flim = c(2,8),
+                       colbg = "white",
+                       main = basename(name),
+                       palette = seewave::reverse.gray.colors.2)
+      grDevices::dev.off()
+    }
+
+
     return(name)
   })
 
-  if (isTRUE(spectro)) {
-    ## if stereo average to mon
-    if (isTRUE(event@stereo)) {
-      event <- tuneR::stereo(tuneR::mono(event, "both"),
-                             tuneR::mono(event, "both"))
-    }
 
-    # saves plot
-    dir.create(file.path(dirname(name), "png"))
-    grDevices::png(
-      file.path(file.path(dirname(name), "png"),
-                stringr::str_replace(basename(name), ".WAV", ".png")),
-      width = 1200, height = 430, res = 72)
-
-    seewave::spectro(wave = event,
-                     wl = 1024,
-                     grid = F,
-                     ovlp = 90,
-                     fastdisp = T,
-                     scale = F,
-                     flab = "",
-                     tlab = "",
-                     flim = c(2,8),
-                     colbg = "white",
-                     main = basename(name),
-                     palette = seewave::reverse.gray.colors.2)
-    grDevices::dev.off()
-  }
 
 
   ## put hyperlink in excel sheet?
