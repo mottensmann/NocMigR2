@@ -40,13 +40,13 @@ Among others, this package relies on the following libraries:
 
 To install the package, use [devtools](https://github.com/r-lib/devtools):
 
-```{r, eval=FALSE, comment="Install"}
+```{r Install-NocMigR2, eval=FALSE}
 devtools::install_github("mottensmann/NocMigR2")
 ```
 
 Load the package once installed:
 
-```{r, warning=FALSE, results='hide', comment="load NocMigR2"}
+```{r load-NocMigR2, warning=FALSE, results='hide'}
 library(NocMigR2)
 ```
 
@@ -65,7 +65,7 @@ Each audio file shares the ctime of the **first** file. Therefore *ctime* of sub
 (2) `ctime = 'each'`: (e.g. Sony PCM D100)
 *Each* audio file is handled individually and therefore saved with unique *ctime*. 
 
-```{r, comment="rename", results='markup'}
+```{r rename, results='markup'}
 ## Example: 
 ## new.name corresponds to creation time of package!
 ## -------
@@ -85,7 +85,7 @@ rename_recording(
 
 Retrieve time of dusk and dawn for a given location using the [suncalc](https://github.com/datastorm-open/suncalc/) package:
 
-```{r, comment="dusk2dawn", results='markup'}
+```{r dusk2dawn, results='markup'}
 ## Example
 ## -------
 dusk2dawn(
@@ -105,7 +105,7 @@ Composing a string describing a past **NocMig** night following recommendations 
 * [Bright Sky](https://brightsky.dev/) (de Maeyer 2020) to retrieve weather data for a given location.
 * [suncalc](https://github.com/datastorm-open/suncalc/) to retrieve time of dusk and dawn
 
-```{r, comment="NocMig_meta", results='markup'}
+```{r, NocMig_meta, results='markup'}
 ## usage
 ## -------
 NocMig_meta(date = Sys.Date() - 1, lat = 52.032, lon = 8.517)
@@ -117,7 +117,7 @@ Create custom species list for target species:
 
 Filters the extensive [BirdNET_GLOBAL_6K_V2.4_Labels](https://github.com/kahst/BirdNET-Analyzer/tree/main/checkpoints/V2.4) file for selected target species. Target species can be selected based on scientific species names or common species names in all languages currently supported by [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer). 
 
-```{r, results='markup'}
+```{r BirdNET_species.list, results='markup'}
 ## examples
 ## --------
 BirdNET_species.list(
@@ -167,7 +167,7 @@ Using `analyzer.py` for detecting signals:
 
 * Use the sample audio file for demonstration purposes:
 
-```{r, results='hide'}
+```{r copy-sample-wave, results='hide'}
 ## create temp folder
 dir.create("test_folder") 
 
@@ -190,14 +190,15 @@ cd PATH TO BirdNET-Analyzer
 ## bash
 ## ---------------
 ## run analyze.py
-python3 analyze.py --i /test_folder --o /test_folder --min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
+python3 analyze.py --i /test_folder --o /test_folder 
+--min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
 ```
 
-```{bash}
+```{bash analyze.py}
 ## Example RStudio on Raspberry Pi 4
 ## -----------------------------------------------------------------------------
 cd ../BirdNET-Analyzer
-python3 analyze.py --i ../NocMigR2/test_folder --o ../NocMigR2/test_folder --min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
+python3 analyze.py --i ../NocMigR2/test_folder --o ../NocMigR2/test_folder --min_conf 0.7 --rtype 'audacity'
 ```
 
 
@@ -208,7 +209,7 @@ The function `BirdNET` (see *?BirdNET* for details) does the following:
 (1) Reshape audacity labels created by `analyze.py` (with `--rtype 'audacity'`) to include the event time estimated from file names:  [Creates `BirdNET.labels.txt` for each `BirdNET.results.txt` file] 
 (2) Write records to BirdNET.xlsx as a template to simplify inspection and verification of the records.
 
-```{r, eval=TRUE}
+```{r BirdNET, eval=TRUE}
 df <- BirdNET(path = "test_folder/",
               ## adding optional meta data
               meta = BirdNET_meta(
@@ -224,7 +225,7 @@ df <- BirdNET(path = "test_folder/",
                 Slist = "BirdNET_V2.4"))
 ```
 
-```{r, results='markup'}
+```{r show-xlsx, results='markup'}
 ## load and show overview
 ## overview
 str(openxlsx::read.xlsx("test_folder/BirdNET.xlsx", "Records"))
@@ -236,12 +237,12 @@ ___
 
 Extract detections and export them as wave files. For easier access to verify records files are named as 'Species_Date_Time.WAV' and corresponding hyperlinks are inserted in the .xlsx file created with `BirdNET()` (see below).
 
-```{r, eval=TRUE}
+```{r BirdNET_extract, eval=TRUE}
 ## extract events and add hyperlink
 BirdNET_extract(path = "test_folder", hyperlink = TRUE) 
 ```
 
-```{r, results='markup'}
+```{r show-BirdNET_extract, results='markup'}
 ## show created dirs 
 list.dirs("test_folder/extracted/", recursive = F)
 
@@ -257,6 +258,18 @@ Summary table of BirdNET detection ready for manual review & verification (attri
 knitr::include_graphics("inst/extdata/xlsx.png")
 ```
 
+```{r verify, echo=FALSE, results='hide'}
+wb <- openxlsx::loadWorkbook("test_folder/BirdNET.xlsx")
+openxlsx::writeData(wb = wb,
+                    sheet = 1,
+                    x = data.frame(Verification = "T"),
+                    startCol = 7,
+                    colNames = FALSE,
+                    startRow = 2)
+openxlsx::saveWorkbook(wb, "test_folder/BirdNET.xlsx", overwrite = TRUE)
+```
+
+
 ##### `BirdNET_archive`
 ___
 
@@ -264,7 +277,7 @@ ___
 
 Archive **verified** records (see screenshot above) using `BirdNET_archive`:
 
-```{r, results='markup'}
+```{r BirdNET_archive, results='markup'}
 out <- BirdNET_archive(
   BirdNET_results = "test_folder/BirdNET.xlsx",
   path2archive = "test_folder",
@@ -276,8 +289,6 @@ str(out)
 ## show folder structure
 list.files("test_folder/")
 ```
-
-
 ___
 
 #### Optional functions 
@@ -291,7 +302,7 @@ ___
 Signal detection based on SNR (signal to noise ratio) wrapping `threshold_detection()` of the [bioacoustics](https://cran.r-project.org/package=bioacoustics) package.
 Additional parameters allow further fine-tuning by specifying frequency characteristics and call length of targets of interest. *Note: For bird calls using [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer) is the recommended alternative*. Detections are exported as Audacity labels using [seewave](https://rug.mnhn.fr/seewave/):
 
-```{r, fig.align='center', results='markup'}
+```{r find_events, fig.align='center', results='markup'}
 TD <- find_events(wav.file = "test_folder/20211220_064253.wav",
                   audacity = TRUE, # Write audacity labels
                   threshold = 8, # SNR in db
@@ -314,7 +325,7 @@ knitr::include_graphics("inst/extdata/sample.png")
 
 Refines the output of `find_events` by first adding a buffer (default 1 second on both sides of the event) and subsequently merging overlapping selections (detections likely belonging to the same calling event) to make the output more pretty. Additionally, allows to filter based on expected frequencies (i.e., checks maximum amplitude frequency is within the frequency band defined by `LPF` and `HPF`). Returns a shortened audio file containing only the selected events (e.g, *"20211220_064253_extracted.txt"* along with the corresponding Audacity labels *"20211220_064253_extracted.txt"*)
 
-```{r, results='markup'}
+```{r extact_events, results='markup'}
 ## extract events based on object TD
 df <- extract_events(threshold_detection = TD, 
                      path = "test_folder",
@@ -331,7 +342,7 @@ Basic function to split large audio files in chunks. *Internally calls the pytho
 
 Short audio segments are saved in a subfolder named 'split'.
 
-```{r, eval=T, comment="split_wave", results='markup'}
+```{r split_wave, eval=T, results='markup'}
 ## split in segments
 split_wave(file = "20211220_064253.wav", # audio file
            path = "test_folder/", # folder 
@@ -342,7 +353,7 @@ list.files("test_folder/split/")
 ```
 
 
-```{r, eval=FALSE, echo=FALSE}
+```{r unlink, eval=TRUE, echo=FALSE}
 ## delete folder
 unlink("test_folder", recursive = T)
 ```

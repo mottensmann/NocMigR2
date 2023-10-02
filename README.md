@@ -82,8 +82,8 @@ rename_recording(
   format = "wav",
   ## only show new name
   .simulate = TRUE)
-rename              old.name            new.name
-rename 1 20211220_064253.wav 20230926_015220.wav
+#>              old.name            new.name
+#> 1 20211220_064253.wav 20231002_212418.wav
 ```
 
 ##### `dusk2dawn`
@@ -101,8 +101,8 @@ dusk2dawn(
   lat = 52.032090, ## Latitude in decimal degrees
   lon = 8.516775, # Longitude in decimal degrees
   tz = "CET") # Time zone
-dusk2dawn                  dusk                dawn                      string
-dusk2dawn 1 2023-09-26 19:52:14 2023-09-27 06:46:52 26.9-27.9.2023, 19:52-06:46
+#>                  dusk                dawn                      string
+#> 1 2023-10-02 19:38:10 2023-10-03 06:56:48 2.10-3.10.2023, 19:38-06:56
 ```
 
 ##### `NocMig_meta`
@@ -125,8 +125,8 @@ using:
 ``` r
 ## usage -------
 NocMig_meta(date = Sys.Date() - 1, lat = 52.032, lon = 8.517)
-NocMig_meta Teilliste 1: 25.9-26.9.2023, 19:54-06:45, trocken, 10°C, NNW, 3 km/h 
-NocMig_meta Teilliste 2: 25.9-26.9.2023, 19:54-06:45, fog, 7°C, SE, 4 km/h
+#> Teilliste 1: 1.10-2.10.2023, 19:40-06:55, trocken, 15°C, ESE, 4 km/h 
+#> Teilliste 2: 1.10-2.10.2023, 19:40-06:55, trocken, 14°C, SW, 5 km/h
 ```
 
 ##### `BirdNET_species.list`
@@ -213,7 +213,6 @@ Using `analyzer.py` for detecting signals:
 ``` r
 ## create temp folder
 dir.create("test_folder")
-#> Warning in dir.create("test_folder"): 'test_folder' already exists
 
 ## Copy sample
 sample <- system.file("extdata", "20211220_064253.wav", package = "NocMigR2")
@@ -234,7 +233,20 @@ cd PATH TO BirdNET-Analyzer
 ## bash
 ## ---------------
 ## run analyze.py
-python3 analyze.py --i /test_folder --o /test_folder --min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
+python3 analyze.py --i /test_folder --o /test_folder 
+--min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
+```
+
+``` bash
+## Example RStudio on Raspberry Pi 4
+## -----------------------------------------------------------------------------
+cd ../BirdNET-Analyzer
+python3 analyze.py --i ../NocMigR2/test_folder --o ../NocMigR2/test_folder --min_conf 0.7 --rtype 'audacity'
+#> Species list contains 6522 species
+#> Found 1 files to analyze
+#> Analyzing ../NocMigR2/test_folder/20211220_064253.wav
+#> INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+#> Finished ../NocMigR2/test_folder/20211220_064253.wav in 8.15 seconds
 ```
 
 #### `BirdNET`
@@ -262,6 +274,7 @@ df <- BirdNET(path = "test_folder/",
                 Overlap = 0,
                 Sensitivity = 1.0,
                 Slist = "BirdNET_V2.4"))
+#> Created test_folder//BirdNET.xlsx
 ```
 
 ``` r
@@ -274,12 +287,12 @@ str(openxlsx::read.xlsx("test_folder/BirdNET.xlsx", "Records"))
 #>  $ T1          : num 44550
 #>  $ T2          : num 44550
 #>  $ Score       : num 0.776
-#>  $ Verification: chr "T"
+#>  $ Verification: num NA
 #>  $ Correction  : num NA
 #>  $ Quality     : num NA
 #>  $ Comment     : num NA
 #>  $ T0          : num 44550
-#>  $ File        : chr "C:/Users/meino/Documents/GitHub/NocMigR2/test_folder/extracted/Eurasian Pygmy-Owl/Eurasian Pygmy-Owl_20211220_064259.WAV"
+#>  $ File        : chr "test_folder//20211220_064253.BirdNET.results.txt"
 str(openxlsx::read.xlsx("test_folder/BirdNET.xlsx", "Meta"))
 #> 'data.frame':    1 obs. of  12 variables:
 #>  $ Location   : chr "Place A"
@@ -317,7 +330,7 @@ list.dirs("test_folder/extracted/", recursive = F)
 
 ## show content for Eurasian Pygmy-OWl
 list.files("test_folder/extracted/Eurasian Pygmy-Owl/")
-#> character(0)
+#> [1] "Eurasian Pygmy-Owl_20211220_064259.wav"
 ```
 
 - Content of `xlsx file`
@@ -349,7 +362,7 @@ Archive **verified** records (see screenshot above) using
 
 ``` r
 out <- BirdNET_archive(BirdNET_results = "test_folder/BirdNET.xlsx", path2archive = "test_folder",
-    db = "test_folder/db.xlsx", trash = FALSE, NocMig = FALSE, keep.false = TRUE)
+    db = "test_folder/db.xlsx", NocMig = FALSE, keep.false = TRUE)
 str(out)
 #> 'data.frame':    1 obs. of  19 variables:
 #>  $ Date       : chr "2021-12-20"
@@ -374,12 +387,10 @@ str(out)
 
 ## show folder structure
 list.files("test_folder/")
-#>  [1] "20211220_064253.BirdNET.labels.txt"  "20211220_064253.BirdNET.results.txt"
-#>  [3] "20211220_064253.txt"                 "20211220_064253.wav"                
-#>  [5] "20211220_064253_extracted.txt"       "20211220_064253_extracted.WAV"      
-#>  [7] "BirdNET.xlsx"                        "db.xlsx"                            
-#>  [9] "extracted"                           "False positives"                    
-#> [11] "split"                               "True positives"
+#> [1] "20211220_064253.BirdNET.labels.txt"  "20211220_064253.BirdNET.results.txt"
+#> [3] "20211220_064253.wav"                 "BirdNET.xlsx"                       
+#> [5] "db.xlsx"                             "extracted"                          
+#> [7] "False positives"                     "True positives"
 ```
 
 ------------------------------------------------------------------------
@@ -453,9 +464,6 @@ labels *“20211220_064253_extracted.txt”*)
 ## extract events based on object TD
 df <- extract_events(threshold_detection = TD, path = "test_folder", format = "wav",
     LPF = 4000, HPF = 1000, buffer = 1)
-#> 
-#> Existing files '_extracted.WAV will be overwritten!
-#> 6 selections overlapped
 ```
 
 ##### `split_wave`:
@@ -473,10 +481,10 @@ Short audio segments are saved in a subfolder named ‘split’.
 split_wave(file = "20211220_064253.wav", # audio file
            path = "test_folder/", # folder 
            segment = 3) # cut in 3 sec segments
-split_wave Split ...
+#> Split ...
 
 ## show files
 list.files("test_folder/split/")
-split_wave [1] "20211220_064253.wav" "20211220_064256.wav" "20211220_064259.wav"
-split_wave [4] "20211220_064302.wav" "20211220_064305.wav"
+#> [1] "20211220_064253.wav" "20211220_064256.wav" "20211220_064259.wav"
+#> [4] "20211220_064302.wav" "20211220_064305.wav"
 ```
