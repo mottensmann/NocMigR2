@@ -261,7 +261,6 @@ out <- BirdNET_archive(
   BirdNET_results = "test_folder/BirdNET.xlsx",
   path2archive = "test_folder",
   db = "test_folder/db.xlsx",
-  trash = FALSE,
   NocMig = FALSE,
   keep.false = TRUE)
 str(out)

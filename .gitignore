@@ -4,3 +4,5 @@
 .Ruserdata
 internal
 test_folder/
+*.Rmd
+R/NocMig_batch.R

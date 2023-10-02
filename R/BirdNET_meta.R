@@ -18,13 +18,13 @@
 #' @export
 #'
 BirdNET_meta <- function(
-    Location = NULL,
-    Lat = NULL,
-    Lon = NULL,
-    Device = NULL,
-    Micro = NULL,
+    Location = NA,
+    Lat = NA,
+    Lon = NA,
+    Device = NA,
+    Micro = NA,
     Min_conf = 0.7,
-    Overlap = 0.25,
+    Overlap = 0,
     Sensitivity = 1.25,
     Slist = "BirdNET_V2.4") {
 
