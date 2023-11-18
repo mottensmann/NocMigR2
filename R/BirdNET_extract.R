@@ -13,7 +13,6 @@
 #' @param nmax maximum number of segments per taxon. default 10
 #' @param sec seconds before and after target to extract
 #' @param hyperlink optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.
-#' @param approx_snr logical. trying to approximate SNR levels. defaults to FALSE
 #' @param spectro logical. export spectro using \code{\link[bioacoustics]{spectro}} defaults to FALSE
 #'
 #' @export
@@ -24,7 +23,7 @@ BirdNET_extract <- function(path = NULL,
                             nmax = NULL,
                             sec = 1,
                             output = NULL,
-                            approx_snr = FALSE,
+                            #approx_snr = FALSE,
                             spectro = FALSE,
                             hyperlink = F) {
 
@@ -207,7 +206,7 @@ BirdNET_extract <- function(path = NULL,
 
     png.link <- data.frame(
       png = file.path(file.path(dirname(out), "png"),
-                      stringr::str_replace(basename(out), format, ".png")))
+                      stringr::str_replace(string = basename(out), pattern = format, replacement = ".png")))
     class(png.link$png) <- "hyperlink"
 
     ## insert in wb ...
@@ -221,24 +220,27 @@ BirdNET_extract <- function(path = NULL,
     openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
   }
 
-  if (isTRUE(approx_snr)) {
+  # Sat Nov 18 11:25:01 2023 ------------------------------
+  # SNR does not work this way. check later again
 
-    cat("Compute SNRs ... \n")
-    SNR <- BirdNET_snr(path = path)
-    cat("done\n")
-    SNR <- dplyr::left_join(data.frame(sound.files = basename(out)),
-                            SNR, by = "sound.files")
-    SNR <- data.frame(SNR = floor(SNR$SNR))
-    ## open workbook as it is ...
-    wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
-
-    ## insert in wb ...
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = SNR,
-                        startCol = ncol(openxlsx::readWorkbook(file.path(path, "BirdNET.xlsx"))) + 1,
-                        colNames = TRUE,
-                        startRow = 1)
-    openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
-  }
+  # if (isTRUE(approx_snr)) {
+  #
+  #   cat("Compute SNRs ... \n")
+  #   SNR <- BirdNET_snr(path = path)
+  #   cat("done\n")
+  #   SNR <- dplyr::left_join(data.frame(sound.files = basename(out)),
+  #                           SNR, by = "sound.files")
+  #   SNR <- data.frame(SNR = floor(SNR$SNR))
+  #   ## open workbook as it is ...
+  #   wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
+  #
+  #   ## insert in wb ...
+  #   openxlsx::writeData(wb = wb,
+  #                       sheet = 1,
+  #                       x = SNR,
+  #                       startCol = ncol(openxlsx::readWorkbook(file.path(path, "BirdNET.xlsx"))) + 1,
+  #                       colNames = TRUE,
+  #                       startRow = 1)
+  #   openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+  # }
 }

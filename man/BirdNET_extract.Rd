@@ -11,7 +11,6 @@ BirdNET_extract(
   nmax = NULL,
   sec = 1,
   output = NULL,
-  approx_snr = FALSE,
   spectro = FALSE,
   hyperlink = F
 )
@@ -28,8 +27,6 @@ BirdNET_extract(
 \item{sec}{seconds before and after target to extract}
 
 \item{output}{path to write wav files}
-
-\item{approx_snr}{logical. trying to approximate SNR levels. defaults to FALSE}
 
 \item{spectro}{logical. export spectro using \code{\link[bioacoustics]{spectro}} defaults to FALSE}
 
