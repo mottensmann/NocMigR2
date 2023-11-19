@@ -5,15 +5,17 @@
 #'
 #' @details
 #' Currently renaming distinguishes two cases:
-#'    (1) \code{ctime = 'first'}: Deriving time based on *ctime* of first recording and compute for subsequent recordings based on recording duration.
-#'    (2) \code{ctime = 'each'}: Deriving time based on *ctime* of each recording separately
+#'    (1) \code{time_reference = 'first'}: Deriving time based on *ctime* (or *mtime*) of first recording and compute for subsequent recordings based on recording duration.
+#'    (2) \code{time_reference = 'each'}: Deriving time based on *ctime* (or *mtime*) of each recording separately
 #'
-#' In order to figure out the correct strategy for recorders not listed here (or when in doubt), make sure to check file properties carefully and run this function with setting \code{.simulate = TRUE}
+#' In order to figure out the correct strategy for recorders not listed here (or when in doubt), make sure to check file properties carefully and run this function with setting \code{.simulate = TRUE}. The choice of *ctime* vs *mtime* might vary depending on the used computer.
 #'
 #' @param path
 #' Path to folder containing audio files
-#' @param ctime
-#' (1) Specify \code{'first'} when all recordings share ctime of the first recording (e.g. \strong{Olympus LS recorder}). (2) Specify \code{'each'} when recordings have unique ctime (e.g. \strong{Sony PCM recorder})
+#' @param time_reference
+#' (1) Specify \code{'first'} when all recordings share ctime/mtime of the first recording (e.g. \strong{Olympus LS recorder}). (2) Specify \code{'each'} when recordings have unique ctime/mtime (e.g. \strong{Sony PCM recorder})
+#'
+#' @param ctime logical. defaults to \code{TRUE}. If \code{FALSE} mtime is used instead.
 #'
 #' @param format
 #' audio format. Supported are \code{'wav'} and \code{'mp3'}
@@ -31,13 +33,15 @@
 #'
 rename_recording <- function(
     path = NULL,
-    ctime = c("first", "each"),
+    time_reference = c("first", "each"),
     format = c("wav", "mp3"),
+    ctime = TRUE,
     .simulate = FALSE) {
 
   ## match function arguments
   ## ---------------------------------------------------------------------------
-  ctime <- match.arg(ctime)
+  time_reference <- match.arg(time_reference)
+  which_time <- ifelse(isTRUE(ctime), 'ctime', 'mtime')
   format <- match.arg(format)
 
   ## list recordings
@@ -63,29 +67,45 @@ rename_recording <- function(
 
 
   ## Olympus LS  and alike:
-  ## Take ctime of first recording; label in ascending order of file names
-  if (ctime == "first") {
+  ## Take ctime/mtime of first recording; label in ascending order of file names
+  if (time_reference == "first") {
 
-    ## get ctime of first audio
+    ## get ctime/mtime of first audio
     meta <- file.info(file.path(path, records[1]))
-    df <- data.frame(old.name = records, seconds = seconds, time = meta$ctime)
+
+    if (which_time == 'ctime') {
+      ## ctime refers to start of first recording
+      df <- data.frame(old.name = records, seconds = seconds, time = meta[[which_time]])
       if (nrow(df) > 1) {
         ## compute times of recordings 2:N
         for (i in 2:nrow(df)) {
-          df[i, "time"] <- df[i - 1, "time"] + df[i - 1, "seconds"]}
+          df[i, "time"] <- df[i - 1, "time"] + df[i - 1, "seconds"]
+        }
       }
+    } else if (which_time == 'mtime') {
+      ## mtime refers to end of last recording
+      df <- data.frame(old.name = records, seconds = seconds)
+      df[["time"]] <- meta[[which_time]] - df[["seconds"]]
+      if (nrow(df) > 1) {
+        ## compute times of recordings N-1:1
+        for (i in (nrow(df) - 1):1) {
+          df[i, "time"] <- df[i + 1, "time"] - df[i, "seconds"]
+        }
+      }
+    }
+
     ## Sony PCM and alike:
-  } else if (ctime == "each" ) {
+  } else if (time_reference == "each" ) {
     ## get time created of first recording
     meta <- lapply(file.path(path, records), file.info)
     meta <- do.call("rbind", meta)
 
     df <- data.frame(old.name = records,
                      seconds = seconds,
-                     time = meta$ctime)
+                     time = meta[[which_time]])
   }
 
-  ## create file names based on ctime of recordings
+  ## create file names based on ctime/mtime of recordings
   df[["new.name"]] <- paste0(substr(df[["time"]], 1, 4),
                              substr(df[["time"]], 6, 7),
                              substr(df[["time"]], 9,10),

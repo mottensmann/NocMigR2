@@ -9,7 +9,8 @@ NocMig_process(
   child.folder = "",
   format = c("wav", "mp3"),
   rename = TRUE,
-  ctime = c("first", "each"),
+  time_reference = c("first", "each"),
+  ctime = TRUE,
   lat = 52.03209,
   lon = 8.516775,
   segment_length = NULL
@@ -18,13 +19,15 @@ NocMig_process(
 \arguments{
 \item{parent.folder}{path}
 
-\item{child.folder}{optional. defaults to \code{NULL}}
+\item{child.folder}{optional. defaults to an emoty string \code{''}}
 
 \item{format}{audio format. Supported are \code{'wav'} and \code{'mp3'}}
 
 \item{rename}{logical. defaults to \code{TRUE}}
 
-\item{ctime}{(1) Specify \code{'first'} when all recordings share ctime of the first recording (e.g. \strong{Olympus LS recorder}). (2) Specify \code{'each'} when recordings have unique ctime (e.g. \strong{Sony PCM recorder})}
+\item{time_reference}{(1) Specify \code{'first'} when all recordings share ctime/mtime of the first recording (e.g. \strong{Olympus LS recorder}). (2) Specify \code{'each'} when recordings have unique ctime/mtime (e.g. \strong{Sony PCM recorder})}
+
+\item{ctime}{logical. defaults to \code{TRUE}. If \code{FALSE} mtime is used instead.}
 
 \item{lat}{latitude in decimal degrees}
 

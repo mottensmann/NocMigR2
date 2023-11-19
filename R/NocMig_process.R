@@ -1,7 +1,7 @@
 #' Process NocMig session for downstream analysis
 #'
 #' @param parent.folder path
-#' @param child.folder optional. defaults to \code{NULL}
+#' @param child.folder optional. defaults to an emoty string \code{''}
 #' @param rename logical. defaults to \code{TRUE}
 #' @param segment_length optional numeric value. If specified, function \code{\link{split_wave}} is used to to segmenti long audio files in shorter segments. defaults to \code{NULL}
 #' @inheritParams rename_recording
@@ -9,18 +9,19 @@
 #' @export
 #'
 NocMig_process <- function(
-    parent.folder = "E:/NocMig", child.folder = "",
+    parent.folder = "E:/NocMig",
+    child.folder = "",
     format = c("wav", "mp3"),
     rename = TRUE,
-    ctime = c("first", "each"),
+    time_reference = c("first", "each"),
+    ctime = TRUE,
     lat = 52.032090,
     lon = 8.516775,
     segment_length = NULL) {
 
   format <- match.arg(format)
-  ctime <- match.arg(ctime)
+  time_reference <- match.arg(time_reference)
 
-  ## 01: check path is valid
   ## ---------------------------------------------------------------------------
   if (!dir.exists(file.path(parent.folder, child.folder))) {
     cat(file.path(parent.folder, child.folder), "not found!\n")
@@ -33,6 +34,7 @@ NocMig_process <- function(
     output <- rename_recording(
       path = file.path(parent.folder, child.folder),
       ctime = ctime,
+      time_reference = time_reference,
       format = format)
     output.time <- RecreateDateTime(output$new.name)
   } else {
