@@ -22,7 +22,7 @@ BirdNET_extract(
 
 \item{score}{minimum confidence score}
 
-\item{nmax}{maximum number of segments per taxon. default 10}
+\item{nmax}{maximum number of segments per taxon. defaults to NULL}
 
 \item{sec}{seconds before and after target to extract}
 
@@ -33,11 +33,11 @@ BirdNET_extract(
 \item{hyperlink}{optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.}
 }
 \description{
-Extract specific event from BirdNET results file
+Extract events detected by BirdNET-Analyzer from original recording files. As labels species names and a time-stamp are used. As guidance for manual inspection of results, a maximum of 10 samples per taxon are randomly selected for validation. Selected segments are highlighted using the keyword 'validate' in the Quality column of the resulting `BirdNET.xlsx` file. Furthermore, the Comments column is populated with a consecutive numbering (1:N) per taxon.
 }
 \details{
-Prerequisites:
-(1) Run analyzer.py (same folder specified for --i and --o!)
-(2) Reshape output using function BirdNET (this package)
-(3) Ensure wav files, BirdNET_results.txt and BirdNET.xlsx files share the same path
+There are a couple of important prerequisites:
+
+(1) Run analyzer.py to detect events, making sure that --i and --o specify the same location.
+(2) Reshape BirdNET results using function \code{\link{BirdNET}}
 }

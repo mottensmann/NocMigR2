@@ -22,7 +22,7 @@ BirdNET_extract2(
 
 \item{score}{minimum confidence score}
 
-\item{nmax}{maximum number of segments per taxon. default 10}
+\item{nmax}{maximum number of segments per taxon. defaults to NULL}
 
 \item{sec}{seconds before and after target to extract}
 

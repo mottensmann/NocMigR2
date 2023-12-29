@@ -36,6 +36,7 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL) {
 
   ## Recording duration
   ## ---------------------------------------------------------------------------
+  cat("Calculate total duration of", length(wavs), "recordings:\n")
   duration <- total_duration(path = path, recursive = recursive)[["duration"]]
   ## ---------------------------------------------------------------------------
 

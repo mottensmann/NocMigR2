@@ -13,7 +13,7 @@ BirdNET_table <- function(path = NULL, recursive = FALSE) {
   if (!dir.exists(path)) stop("provide valid path")
 
   ## binding for global variables to please checks ...
-  species <- hour <- NA
+  species <- hour <- . <- NA
 
   # 0.) Check 'BirdNET.results.txt'
   BirdNET.results.files <- list.files(path = path,
@@ -24,10 +24,21 @@ BirdNET_table <- function(path = NULL, recursive = FALSE) {
 
   if (length(BirdNET.results.files >= 1)) {
     # read audacity marks
-    df <- suppressMessages(do.call("rbind",
-                                   lapply(BirdNET.results.files,
-                                          readr::read_delim,
-                                          col_names = c("label", "date", "time", "x1", "score", "x2"))))
+    if (interactive()) {
+      cat("Read BirdNET results:\n")
+      df <- pbapply::pblapply(BirdNET.results.files,
+                              readr::read_delim,
+                              show_col_types = FALSE,
+                              col_names = c("label", "date", "time", "x1", "score", "x2")) %>%
+        do.call("rbind",.)
+    } else {
+      df <- lapply(BirdNET.results.files,
+                   readr::read_delim,
+                   show_col_types = FALSE,
+                   col_names = c("label", "date", "time", "x1", "score", "x2")) %>%
+        do.call("rbind",.)
+    }
+
     # retrieve species
     df[["species"]] <- sapply(df$label, function(x) {
       x1 <- stringr::str_split(x, pattern = "\t")[[1]]
@@ -237,10 +248,18 @@ total_duration <- function(path, format = "WAV", recursive = FALSE) {
 
   duration <- sapply(waves, tuneR::readWave, header = T)
 
-  duration <- sum(sapply(waves, function(i) {
-    audio <- tuneR::readWave(i, header = TRUE)
-    audio$samples/audio$sample.rate
-  }))
+  if (interactive()) {
+    duration <- sum(pbapply::pbsapply(waves, function(i) {
+      audio <- tuneR::readWave(i, header = TRUE)
+      audio$samples/audio$sample.rate
+    }))
+  } else {
+    duration <- sum(sapply(waves, function(i) {
+      audio <- tuneR::readWave(i, header = TRUE)
+      audio$samples/audio$sample.rate
+    }))
+  }
+
 
   sample_rate <- tuneR::readWave(waves[1], header = TRUE)$sample.rate
 
@@ -540,3 +559,35 @@ BirdNET_extract2 <- function(path = NULL,
   #   openxlsx::saveWorkbook(wb, file.path(path, "BirdNET2.xlsx"), overwrite = TRUE)
   # }
 }
+
+#' Append columns to existing xslx database
+#' @param path file
+#' @param data data frame
+#' @export
+#'
+xlsx_append <- function(path, data) {
+
+  ## load xlsx file
+  xlsx <- readxl::read_xlsx(file.path(path, "BirdNET.xlsx"))
+
+  ## match rows based on basename of audio files
+  xlsx[["File"]] <- basename( xlsx[["File"]])
+
+  ## merge data frames
+  df <- dplyr::left_join(xlsx, data, by = c("File" = "file"))
+
+  ## open workbook as it is ...
+  wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
+
+  ## insert in wb ...
+  openxlsx::writeData(
+    wb = wb,
+    sheet = 1,
+    x = df[,c("SNR", "ampl_mean", "loudness_mean", "loudness_median", "loudness_sd")],
+    startCol = ncol(xlsx) + 1,
+    colNames = TRUE,
+    startRow = 1)
+  openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+  return(df)
+}
+

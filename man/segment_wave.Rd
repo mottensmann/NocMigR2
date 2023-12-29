@@ -4,7 +4,7 @@
 \alias{segment_wave}
 \title{segment wave files}
 \usage{
-segment_wave(path, length = 30, format = c("wav", "mp3"), keep.input = TRUE)
+segment_wave(path, length = 30, format = c("wav", "mp3"), keep.input = FALSE)
 }
 \arguments{
 \item{path}{path}

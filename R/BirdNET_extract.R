@@ -1,16 +1,19 @@
 #' Extract specific event from BirdNET results file
 #'
+#' @description
+#' Extract events detected by BirdNET-Analyzer from original recording files. As labels species names and a time-stamp are used. As guidance for manual inspection of results, a maximum of 10 samples per taxon are randomly selected for validation. Selected segments are highlighted using the keyword 'validate' in the Quality column of the resulting `BirdNET.xlsx` file. Furthermore, the Comments column is populated with a consecutive numbering (1:N) per taxon.
+#'
 #' @details
-#' Prerequisites:
-#' (1) Run analyzer.py (same folder specified for --i and --o!)
-#' (2) Reshape output using function BirdNET (this package)
-#' (3) Ensure wav files, BirdNET_results.txt and BirdNET.xlsx files share the same path
+#' There are a couple of important prerequisites:
+#'
+#' (1) Run analyzer.py to detect events, making sure that --i and --o specify the same location.
+#' (2) Reshape BirdNET results using function \code{\link{BirdNET}}
 #'
 #' @param path path. Relative path will be converted to absolute path.
 #' @param output path to write wav files
 #' @param taxon optional. select target taxa
 #' @param score minimum confidence score
-#' @param nmax maximum number of segments per taxon. default 10
+#' @param nmax maximum number of segments per taxon. defaults to NULL
 #' @param sec seconds before and after target to extract
 #' @param hyperlink optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.
 #' @param spectro logical. export spectro using \code{\link[bioacoustics]{spectro}} defaults to FALSE
@@ -85,6 +88,11 @@ BirdNET_extract <- function(path = NULL,
 
   ## 3.) Extract ...
   ## ---------------------------------------------------------------------------
+  if (isTRUE(spectro)) {
+    cat("Extract events and create spectros ...\n")
+  } else {
+    cat("Extract events ...\n")
+  }
   out <- pbapply::pbsapply(1:nrow(xlsx), function(r) {
 
     ## find wav file
@@ -93,7 +101,7 @@ BirdNET_extract <- function(path = NULL,
     format <- ".WAV"
 
     if (!file.exists(wav)) {
-      ## check lowercase
+      ## check lower-case
       wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.results.txt", "wav")
       format <- ".wav"
     }
@@ -166,8 +174,6 @@ BirdNET_extract <- function(path = NULL,
     return(name)
   })
 
-
-
   ## put hyperlink(s) in excel sheet?
   ## -------------------------------------------------------------------------
   if (isTRUE(hyperlink) & isFALSE(spectro)) {
@@ -204,9 +210,14 @@ BirdNET_extract <- function(path = NULL,
 
     ## create hyperlink ... check order?
 
+    ## check for correct format pattern
+    format <- tools::file_ext(out)
+
     png.link <- data.frame(
       png = file.path(file.path(dirname(out), "png"),
-                      stringr::str_replace(string = basename(out), pattern = format, replacement = ".png")))
+                      stringr::str_replace(string = basename(out),
+                                           pattern = format,
+                                           replacement = "png")))
     class(png.link$png) <- "hyperlink"
 
     ## insert in wb ...
@@ -219,6 +230,41 @@ BirdNET_extract <- function(path = NULL,
 
     openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
   }
+
+  ## Add information for validation of subsets
+
+  for (one_taxon in unique(xlsx[["Taxon"]])) {
+    ## find rows ...
+    matching_rows <- which(xlsx[["Taxon"]] == one_taxon)
+    ## set consecutive numbers ...
+    xlsx[["Comment"]][matching_rows] <- 1:length(matching_rows)
+    ## select segments for validation ...
+    picked_samples <- ifelse(
+      test = length(matching_rows) == 1,
+      yes = matching_rows,
+      no = sample(as.numeric(matching_rows), ifelse(length(matching_rows) > 10, 10, length(matching_rows))))
+    xlsx[["Quality"]][picked_samples] <- 'Validate !'
+  }
+
+  ## open workbook as it is ...
+  wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
+
+  ## insert in wb ...
+  openxlsx::writeData(wb = wb,
+                      sheet = 1,
+                      x =  xlsx[["Comment"]],
+                      startCol = 10,
+                      colNames = FALSE,
+                      startRow = 2)
+
+  openxlsx::writeData(wb = wb,
+                      sheet = 1,
+                      x =  xlsx[["Quality"]],
+                      startCol = 9,
+                      colNames = FALSE,
+                      startRow = 2)
+  openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+
 
   # Sat Nov 18 11:25:01 2023 ------------------------------
   # SNR does not work this way. check later again
