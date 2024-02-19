@@ -4,7 +4,7 @@
 \alias{BirdNET}
 \title{Processing data analysed using BirdNET-Analyzer}
 \usage{
-BirdNET(path = NULL, recursive = FALSE, meta = NULL)
+BirdNET(path = NULL, recursive = FALSE, meta = NULL, am_config = FALSE)
 }
 \arguments{
 \item{path}{path to text files}
@@ -12,11 +12,12 @@ BirdNET(path = NULL, recursive = FALSE, meta = NULL)
 \item{recursive}{logical. Should the listing recurse into directories?}
 
 \item{meta}{optional. data.frame with recording metadata}
+
+\item{am_config}{logical. attempt to read Audiomoth configuration file if TRUE}
 }
 \description{
 Processing data analysed using BirdNET-Analyzer
 }
 \examples{
 \dontrun{BirdNET(path = "Path to files")}
-
 }

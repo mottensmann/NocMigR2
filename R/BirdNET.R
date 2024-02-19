@@ -2,12 +2,13 @@
 #'
 #' @inheritParams BirdNET_results2txt
 #' @param meta optional. data.frame with recording metadata
+#' @param am_config logical. attempt to read Audiomoth configuration file if TRUE
 #' @examples
 #' \dontrun{BirdNET(path = "Path to files")}
-#'
+#' @import magrittr
 #' @export
 #'
-BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL) {
+BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FALSE) {
 
   if (!dir.exists(path)) stop("provide valid path")
 
@@ -17,6 +18,16 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL) {
   ## ---------------------------------------------------------------------------
   wavs <- list.files(path = path, pattern = ".WAV",
                      ignore.case = T, recursive = recursive, full.names = T)
+
+  # Sun Jan  7 11:57:26 2024 ------------------------------
+  ## check for folder extracted, ignore those files and present a warninng message
+  dirs <- list.dirs(path)
+  dirs2 <- stringr::str_remove(dirs, pattern = path)
+  if (any(dirs2 == 'extracted')) {
+    warning("Detected folder", dirs[which(dirs2 == "extracted")], ".Ignore all wave files in this folder!\n")
+
+  }
+
   ## exclude folder extracted if present
   wavs <- stringr::str_subset(wavs, "extracted", negate = TRUE)
   ## obtain duration of last file to get end of recording period
@@ -74,15 +85,38 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL) {
 
     meta[["From"]] <- from; meta[["To"]] <- to; meta[["Duration"]] <- duration
 
-    out <- list(
-      Records = Records,
-      #Records.dd = BirdNET_table$records.day,
-      #Records.hh = BirdNET_table$records.hour,
-      Meta = meta)
+    if (isTRUE(am_config)) {
+      if (file.exists(file.path(path, 'CONFIG.txt'))) {
+        am <- audiomothConfig(filename = file.path(path, 'CONFIG.txt'))
+        meta <- meta %>%
+          dplyr::mutate(
+            `Device ID` = trimws(am$Value[am$Key == 'Device ID']),
+            Hz = trimws(am$Value[am$Key == 'Sample rate (Hz)']),
+            Gain = trimws(am$Value[am$Key == 'Gain']),
+            Sleep = trimws(am$Value[am$Key == 'Sleep duration (s)']),
+            Rec = trimws(am$Value[am$Key == 'Recording duration (s)']),
+            Filter = trimws(am$Value[am$Key == 'Filter']))
+      } else {
+        meta <- meta %>%
+          dplyr::mutate(
+            `Device ID` = NA,
+            Hz = NA,
+            Gain = NA,
+            Sleep = NA ,
+            Rec = NA ,
+            Filter = NA)
+      }
+    }
+
+      out <- list(
+        Records = Records,
+        #Records.dd = BirdNET_table$records.day,
+        #Records.hh = BirdNET_table$records.hour,
+        Meta = meta)
+    }
+
+    openxlsx::write.xlsx(x = out, file = file.path(path, "BirdNET.xlsx"), overwrite = T)
+    cat("Created", file.path(path, "BirdNET.xlsx"), "\n")
+    return(out)
+
   }
-
-  openxlsx::write.xlsx(x = out, file = file.path(path, "BirdNET.xlsx"), overwrite = T)
-  cat("Created", file.path(path, "BirdNET.xlsx"), "\n")
-  return(out)
-
-}

@@ -239,10 +239,12 @@ BirdNET_extract <- function(path = NULL,
     ## set consecutive numbers ...
     xlsx[["Comment"]][matching_rows] <- 1:length(matching_rows)
     ## select segments for validation ...
-    picked_samples <- ifelse(
-      test = length(matching_rows) == 1,
-      yes = matching_rows,
-      no = sample(as.numeric(matching_rows), ifelse(length(matching_rows) > 10, 10, length(matching_rows))))
+    picked_samples <- sample_rows(x = matching_rows)
+    # picked_samples <- ifelse(
+    #   test = length(matching_rows) == 1,
+    #   yes = matching_rows,
+    #   no = sample(x =  as.numeric(matching_rows),
+    #               size = ifelse(length(matching_rows) > 10, 10, length(matching_rows))))
     xlsx[["Quality"]][picked_samples] <- 'Validate !'
   }
 

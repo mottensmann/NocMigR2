@@ -1,6 +1,31 @@
 #### Internal functions ####
 ## ---------------------------------------------------------------------------##
 
+#' Read AudioMoth configuration file
+#'
+#' Reads and parses an AudioMoth configuration file.
+#'
+#' @param filename Path to the configuration file to read
+#' @return A data frame of matching annotations
+#' @export
+#' @source https://github.com/edwbaker/SonicScrewdriveR/blob/master/R/audiomoth.R
+#' @importFrom utils read.csv
+#' @examples
+#' \dontrun{
+#' audiomothConfig("./CONFIG.TXT")
+#' }
+#' @export
+#'
+audiomothConfig <- function(filename) {
+  f <- readLines(filename)
+  c <- read.csv(textConnection(sub(":", "|", f)), header = FALSE, sep = "|")
+  c[,1] <- trimws(c[,1])
+  colnames(c) <- c("Key", "Value")
+  return(c)
+}
+
+
+
 #' Data frame of BirdNET detections
 #'
 #' @param path path
@@ -591,3 +616,16 @@ xlsx_append <- function(path, data) {
   return(df)
 }
 
+#' Select samples for validation
+#'
+#' @param x  numeric vector giving indices
+#'
+sample_rows <- function(x) {
+  if (length(x) == 1) {
+    return(x)
+  } else if (length(x) %in% 2:10) {
+    return(x)
+  } else {
+    return(sample(x = as.numeric(x), size = 10, replace = F))
+  }
+}
