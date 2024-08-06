@@ -21,7 +21,17 @@ BirdNET_man_detec <- function(path, spectro = FALSE) {
     ## read db to detect duplicates before writing ...
     ## openxlsx does not handle format correctly ...
     db1 <- readxl::read_xlsx(path = file.path(path, "BirdNET.xlsx"), sheet = 1)
+    ## drop empty rows
+    db1 <- db1[rowSums(is.na(db1)) != ncol(db1),]
+    db1_rows <- nrow(db1)
+
     db2 <- readxl::read_xlsx(path = file.path(path, "BirdNET2.xlsx"), sheet = 1)
+    ## drop empty rows
+    db2 <- db2[rowSums(is.na(db2)) != ncol(db2),]
+
+    if ("png" %in% names(db1) & !"png" %in% names(db2)) {
+      db2[["png"]] <- NA
+    }
 
     if (any(duplicated(db1))) warning("Database contains duplicates!")
     db_new <- try(rbind(db1, db2))
@@ -41,13 +51,12 @@ BirdNET_man_detec <- function(path, spectro = FALSE) {
     class(db2$File) <- "hyperlink"
     class(db2$png) <- "hyperlink"
 
-
     wb <- openxlsx::loadWorkbook(db1)
     openxlsx::writeData(wb = wb,
                         sheet = 1,
                         x = db2,
                         colNames = FALSE,
-                        startRow = nrow(openxlsx::readWorkbook(db1)) + 2)
+                        startRow = db1_rows + 2)
     openxlsx::saveWorkbook(wb, file = db1, overwrite = TRUE)
     unlink(file.path(path, "BirdNET2.xlsx"))
   }
