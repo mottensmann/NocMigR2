@@ -55,6 +55,18 @@ BirdNET_results2txt <- function(path = NULL, recursive = FALSE) {
         return(t[length(t)])
       })
 
+      ## check for special case: 00:00:00 & t1 = 0
+      if (any(BirdNET.results.df$t1 == 0)) {
+        indices <- which(BirdNET.results.df$t1 == 0)
+        for (i in indices) {
+          time.sum <-
+            lubridate::hour(BirdNET.results.df$Start[i]) +
+            lubridate::minute(BirdNET.results.df$Start[i]) +
+            lubridate::second(BirdNET.results.df$Start[i])
+          if (time.sum == 0) BirdNET.results.df$t1[i] <- 1
+        }
+      }
+
       BirdNET.results.df$labelNEW <- paste(
         BirdNET.results.df$label2,
         BirdNET.results.df[["Start"]] + BirdNET.results.df[["t1"]],

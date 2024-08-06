@@ -430,19 +430,33 @@ BirdNET_extract2 <- function(path = NULL,
   ## 3.) Extract ...
   out <- pbapply::pbsapply(1:nrow(xlsx), function(r) {
 
-    ## find wav file
-    wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.labels2.txt", "WAV")
-    format <- ".WAV"
+    # text file
+    txt <- xlsx[[r, "File"]]
 
+    ## find wav file
+    # Sun Aug  4 12:27:06 2024 ------------------------------
+    # Take file argument and identify corresponding audio file
+      if (!file.exists(txt)) {
+        stop(txt, "does not exist")
+      } else {
+        # get extension of text file
+        txt_ext <- tools::file_ext(txt)
+        # replace by 'WAV'
+        wav <- stringr::str_replace(txt, txt_ext, "WAV")
+        # strip out 'BirdNET.labels2' from file name
+        wav <- stringr::str_remove(wav, '.BirdNET.labels2')
+        format <- ".WAV"
+      }
+
+     # Sat Aug  3 21:28:08 2024 ------------------------------
+    #wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.labels2", "WAV")
+    #wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.labels2.txt", "WAV")
 
     if (!file.exists(wav)) {
-      ## check lowercase
-      wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.labels2.txt", "wav")
+      wav <- stringr::str_replace(wav, 'WAV', 'wav')
       format <- ".wav"
     }
-
     if (!file.exists(wav)) stop(wav, "not found")
-
 
     ##  select event time stamps
     t0 <- xlsx[[r, "T0"]]; t1 <- xlsx[[r, "T1"]]; t2 <- xlsx[[r, "T2"]]
