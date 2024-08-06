@@ -2,7 +2,7 @@ Package: NocMigR2
 Type: Package
 Title: A Suite of Functions to Play with NocMig and Other Long-Term Recordings
 Version: 0.1.0
-Date: 2023-10-02
+Date: 2024-08-06
 Authors@R: c(
     person("Meinolf", "Ottensmann", email = "meinolf.ottensmann@web.de", role = c("aut","cre"), 
     comment = c(ORCID = "0000-0003-3112-6928")))
@@ -26,14 +26,13 @@ Imports:
     readr,
     readxl,
     rlang,
-    soundgen,
     stringi,
     stringr,
     suncalc,
     tuneR,
     seewave,
     warbleR,
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 3.0.0),
     reticulate

@@ -22,7 +22,7 @@ Among others, this package relies on the following libraries:
 [bioacoustics](https://cran.r-project.org/package=bioacoustics),
 [seewave](https://cran.r-project.org/package=seewave),
 [tuneR](https://cran.r-project.org/package=tuneR),
-[Warbler](https://cran.r-project.org/package=warbleR)
+[WarbleR](https://cran.r-project.org/package=warbleR)
 
 **python**: [audioop](https://docs.python.org/3/library/audioop.html),
 [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer),
@@ -33,6 +33,13 @@ To install the package, use
 
 ``` r
 devtools::install_github("mottensmann/NocMigR2")
+```
+
+*`NocMigR2` depends on `warbleR` which is currently (as of 2024-07-26)
+missing on CRAN. If the installation above fails try:*
+
+``` r
+devtools::install_github("maRce10/warbleR")
 ```
 
 Load the package once installed:
@@ -83,7 +90,7 @@ rename_recording(
   ## only show new name
   .simulate = TRUE)
 #>              old.name            new.name
-#> 1 20211220_064253.wav 20231002_212418.wav
+#> 1 20211220_064253.wav 20240806_142737.wav
 ```
 
 ##### `dusk2dawn`
@@ -101,8 +108,8 @@ dusk2dawn(
   lat = 52.032090, ## Latitude in decimal degrees
   lon = 8.516775, # Longitude in decimal degrees
   tz = "CET") # Time zone
-#>                  dusk                dawn                      string
-#> 1 2023-10-02 19:38:10 2023-10-03 06:56:48 2.10-3.10.2023, 19:38-06:56
+#>                  dusk                dawn                    string
+#> 1 2024-08-06 21:49:09 2024-08-07 05:18:52 6.8-7.8.2024, 21:49-05:18
 ```
 
 ##### `NocMig_meta`
@@ -125,8 +132,8 @@ using:
 ``` r
 ## usage -------
 NocMig_meta(date = Sys.Date() - 1, lat = 52.032, lon = 8.517)
-#> Teilliste 1: 1.10-2.10.2023, 19:40-06:55, trocken, 15°C, ESE, 4 km/h 
-#> Teilliste 2: 1.10-2.10.2023, 19:40-06:55, trocken, 14°C, SW, 5 km/h
+#> Teilliste 1: 5.8-6.8.2024, 21:51-05:17, trocken, 15°C, SE, 11 km/h 
+#> Teilliste 2: 5.8-6.8.2024, 21:51-05:17, trocken, 14°C, SSW, 4 km/h
 ```
 
 ##### `BirdNET_species.list`
@@ -213,6 +220,7 @@ Using `analyzer.py` for detecting signals:
 ``` r
 ## create temp folder
 dir.create("test_folder")
+#> Warning in dir.create("test_folder"): 'test_folder' already exists
 
 ## Copy sample
 sample <- system.file("extdata", "20211220_064253.wav", package = "NocMigR2")
@@ -242,11 +250,6 @@ python3 analyze.py --i /test_folder --o /test_folder
 ## -----------------------------------------------------------------------------
 cd ../BirdNET-Analyzer
 python3 analyze.py --i ../NocMigR2/test_folder --o ../NocMigR2/test_folder --min_conf 0.7 --rtype 'audacity'
-#> Species list contains 6522 species
-#> Found 1 files to analyze
-#> Analyzing ../NocMigR2/test_folder/20211220_064253.wav
-#> INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
-#> Finished ../NocMigR2/test_folder/20211220_064253.wav in 8.15 seconds
 ```
 
 #### `BirdNET`
@@ -274,6 +277,7 @@ df <- BirdNET(path = "test_folder/",
                 Overlap = 0,
                 Sensitivity = 1.0,
                 Slist = "BirdNET_V2.4"))
+#> Calculate total duration of 1 recordings:
 #> Created test_folder//BirdNET.xlsx
 ```
 
@@ -292,7 +296,7 @@ str(openxlsx::read.xlsx("test_folder/BirdNET.xlsx", "Records"))
 #>  $ Quality     : num NA
 #>  $ Comment     : num NA
 #>  $ T0          : num 44550
-#>  $ File        : chr "test_folder//20211220_064253.BirdNET.results.txt"
+#>  $ File        : chr "test_folder/20211220_064253.BirdNET.results.txt"
 str(openxlsx::read.xlsx("test_folder/BirdNET.xlsx", "Meta"))
 #> 'data.frame':    1 obs. of  12 variables:
 #>  $ Location   : chr "Place A"
@@ -321,16 +325,17 @@ corresponding hyperlinks are inserted in the .xlsx file created with
 ``` r
 ## extract events and add hyperlink
 BirdNET_extract(path = "test_folder", hyperlink = TRUE)
+#> Extract events ...
 ```
 
 ``` r
 ## show created dirs
 list.dirs("test_folder/extracted/", recursive = F)
-#> [1] "test_folder/extracted//Eurasian Pygmy-Owl"
+#> [1] "test_folder/extracted/Eurasian Pygmy-Owl"
 
 ## show content for Eurasian Pygmy-OWl
 list.files("test_folder/extracted/Eurasian Pygmy-Owl/")
-#> [1] "Eurasian Pygmy-Owl_20211220_064259.wav"
+#> [1] "Eurasian Pygmy-Owl_20211220_064259.WAV"
 ```
 
 - Content of `xlsx file`

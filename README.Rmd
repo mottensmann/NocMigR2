@@ -1,6 +1,8 @@
 ---
 output: github_document
 html_preview: false
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, echo = FALSE}
@@ -31,7 +33,7 @@ Among others, this package relies on the following libraries:
     [bioacoustics](https://cran.r-project.org/package=bioacoustics),
     [seewave](https://cran.r-project.org/package=seewave),
     [tuneR](https://cran.r-project.org/package=tuneR),
-    [Warbler](https://cran.r-project.org/package=warbleR)
+    [WarbleR](https://cran.r-project.org/package=warbleR)
     
 **python**:
     [audioop](https://docs.python.org/3/library/audioop.html),
@@ -42,6 +44,12 @@ To install the package, use [devtools](https://github.com/r-lib/devtools):
 
 ```{r Install-NocMigR2, eval=FALSE}
 devtools::install_github("mottensmann/NocMigR2")
+```
+
+*`NocMigR2` depends on `warbleR` which is currently (as of 2024-07-26) missing on CRAN. If the installation above fails try:*
+
+```{r Install-warbleR, eval=FALSE}
+devtools::install_github("maRce10/warbleR")
 ```
 
 Load the package once installed:
@@ -110,6 +118,7 @@ Composing a string describing a past **NocMig** night following recommendations 
 ## -------
 NocMig_meta(date = Sys.Date() - 1, lat = 52.032, lon = 8.517)
 ```
+
 ##### `BirdNET_species.list`
 *** 
 
@@ -194,7 +203,7 @@ python3 analyze.py --i /test_folder --o /test_folder
 --min_conf 0.7 --rtype 'audacity' --threads 1 --locale 'de'
 ```
 
-```{bash analyze.py}
+```{bash, eval = FALSE}
 ## Example RStudio on Raspberry Pi 4
 ## -----------------------------------------------------------------------------
 cd ../BirdNET-Analyzer
