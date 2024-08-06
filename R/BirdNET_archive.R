@@ -52,7 +52,7 @@ BirdNET_archive <- function(
   if (isTRUE(NocMig)) {
     ## ignore what is not considered NocMig or NFC --> Local
     if (!all(is.na(df$Comment))) {
-      if (any(df$Comment == "Local")) df <- df[-which(df$Comment == "Local"),]
+      if (any(df$Comment == "Local", na.rm = T)) df <- df[-which(df$Comment == "Local"),]
     }
   }
   if (nrow(df) > 0) {
