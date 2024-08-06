@@ -79,7 +79,7 @@ BirdNET_species.list <- function(
 
   ## write to file
   ## ---------------------------------------------------------------------------
-  if (isTRUE(.write_text)) utils::write.table(x = df, sep = "_", col.names = FALSE, file = species_list)
+  if (isTRUE(.write_text)) utils::write.table(x = df, sep = "_", col.names = FALSE, row.names = FALSE, file = species_list, quote = FALSE)
   return(df)
 }
 }
