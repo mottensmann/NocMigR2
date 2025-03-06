@@ -24,6 +24,6 @@ BirdNET_archive_am(
 Archive validated records of AudioMoth recordings
 }
 \details{
-(1) Load table containing validated data
-(2) Copy extracted events for future references to local database, distinguishing between true and false positives and unverified events (e.g., species not of primary interest)
+(1) Load table containing validated data --> xlsx spreadsheet
+(2) Copy extracted events for future reference to a local database, distinguishing between true and false positives (unverified records are ignored)
 }

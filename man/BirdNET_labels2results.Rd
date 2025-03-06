@@ -4,10 +4,12 @@
 \alias{BirdNET_labels2results}
 \title{Read BirdNET_labels.txt}
 \usage{
-BirdNET_labels2results(path)
+BirdNET_labels2results(path, recursive = FALSE)
 }
 \arguments{
 \item{path}{path}
+
+\item{recursive}{logical}
 }
 \description{
 Read BirdNET_labels.txt

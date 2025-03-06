@@ -2,18 +2,21 @@
 #'
 #' @inheritParams BirdNET
 #' @inheritParams BirdNET_extract
+#' @param recursive logical
 #' @export
 #'
-BirdNET_man_detec <- function(path, spectro = FALSE) {
+BirdNET_man_detec <- function(path, spectro = FALSE, recursive = FALSE) {
 
 
   ## check for manual detections
   ## ---------------------------------------------------------------------------
-  Records <- BirdNET_labels2results(path = path)
+  Records <- BirdNET_labels2results(path = path, recursive = recursive)
 
   if (nrow(Records) >= 1) {
     openxlsx::write.xlsx(x = Records, file = file.path(path, "BirdNET2.xlsx"), overwrite = T)
-    BirdNET_extract2(path = path, spectro = spectro)
+    if (isTRUE(spectro)) warning("Due to an internal bug Spectro = TRUE is currently not supported!")
+    #BirdNET_extract2(path = path, spectro = spectro)
+    BirdNET_extract2(path = path, spectro = FALSE)
 
     ## now append to BirdNET.xlsx and delete BirdNET2.xlsx
     ## read db if existing ...

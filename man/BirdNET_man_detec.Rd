@@ -4,12 +4,14 @@
 \alias{BirdNET_man_detec}
 \title{Append manually recovered detections to existing xlsx file}
 \usage{
-BirdNET_man_detec(path, spectro = FALSE)
+BirdNET_man_detec(path, spectro = FALSE, recursive = FALSE)
 }
 \arguments{
 \item{path}{path to text files}
 
 \item{spectro}{logical. export spectro using \code{\link[bioacoustics]{spectro}} defaults to FALSE}
+
+\item{recursive}{logical}
 }
 \description{
 Append manually recovered detections to existing xlsx file

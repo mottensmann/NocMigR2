@@ -95,12 +95,6 @@ BirdNET_table <- function(path = NULL, recursive = FALSE) {
   }
 }
 
-
-
-
-
-
-
 #' convert start_time to seconds
 #' @param t character vector
 #' @keywords internal
@@ -298,8 +292,9 @@ total_duration <- function(path, format = "WAV", recursive = FALSE) {
 #' Read BirdNET_labels.txt
 #'
 #' @param path path
+#' @param recursive logical
 #'
-BirdNET_labels2results <- function(path) {
+BirdNET_labels2results <- function(path, recursive = FALSE) {
 
   ## binding for global variables to please checks ...
   . <- NA
@@ -343,7 +338,7 @@ BirdNET_labels2results <- function(path) {
       ))
   }
 
-  labels2 <- list.files(path, pattern = "labels2", full.names = TRUE)
+  labels2 <- list.files(path, pattern = "labels2", full.names = TRUE, recursive = recursive)
   if (length(labels2) >= 1) {
     out <- lapply(labels2, man_detec) %>%
       do.call("rbind",.)
@@ -436,19 +431,19 @@ BirdNET_extract2 <- function(path = NULL,
     ## find wav file
     # Sun Aug  4 12:27:06 2024 ------------------------------
     # Take file argument and identify corresponding audio file
-      if (!file.exists(txt)) {
-        stop(txt, "does not exist")
-      } else {
-        # get extension of text file
-        txt_ext <- tools::file_ext(txt)
-        # replace by 'WAV'
-        wav <- stringr::str_replace(txt, txt_ext, "WAV")
-        # strip out 'BirdNET.labels2' from file name
-        wav <- stringr::str_remove(wav, '.BirdNET.labels2')
-        format <- ".WAV"
-      }
+    if (!file.exists(txt)) {
+      stop(txt, "does not exist")
+    } else {
+      # get extension of text file
+      txt_ext <- tools::file_ext(txt)
+      # replace by 'WAV'
+      wav <- stringr::str_replace(txt, txt_ext, "WAV")
+      # strip out 'BirdNET.labels2' from file name
+      wav <- stringr::str_remove(wav, '.BirdNET.labels2')
+      format <- ".WAV"
+    }
 
-     # Sat Aug  3 21:28:08 2024 ------------------------------
+    # Sat Aug  3 21:28:08 2024 ------------------------------
     #wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.labels2", "WAV")
     #wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.labels2.txt", "WAV")
 
@@ -642,4 +637,58 @@ sample_rows <- function(x) {
   } else {
     return(sample(x = as.numeric(x), size = 10, replace = F))
   }
+}
+
+#' Apply high-pass filtering to extracted sound files
+#'
+#' @description
+#' Filtering currently only implemented for mono wave files
+#'
+#' @param input_dir directory containing wave files to filter
+#' @param output_dir output directory. defaults to file.path(input_dir,"filtered")
+#' @param hpf high-pass filtering frequency in Hz
+#' @param normalise logical
+#' @export
+#'
+audio_filter <- function(input_dir,
+                         output_dir = file.path(input_dir,"filtered"),
+                         hpf = 20*1000,
+                         normalise = FALSE) {
+
+  ## list wave files
+  wave_files <- list.files(input_dir, pattern = ".WAV", ignore.case = T)
+  ## check for output_dir
+  if (!dir.exists(output_dir)) dir.create(output_dir)
+
+  ## batch ...
+  waves.filt <- pbapply::pblapply(wave_files, function(wave_file) {
+    wave <- tuneR::readWave(file.path(input_dir, wave_file))
+    ## hpf
+    wave.filt <- seewave::fir(wave, f = wave@samp.rate, from = hpf, bandpass = TRUE)
+    ## convert to wave
+    wave.filt <- tuneR::Wave(left = wave.filt, samp.rate = wave@samp.rate, bit = 16)
+    ## normalize
+    if (isTRUE(normalise)) wave.filt <- tuneR::normalize(wave.filt, unit = '16')
+    ## export
+    tuneR::writeWave(
+      wave.filt,
+      filename = file.path(output_dir, remove_decimal_seconds(wave_file, input_dir)))
+
+
+
+  })
+}
+
+#' Eliminate postfix decimal seconds from file names
+#' @param wave_file file name
+#' @param input_dir path to file to check file extension
+#'
+remove_decimal_seconds <- function(wave_file, input_dir) {
+  ## get extension
+  ext <- tools::file_ext(file.path(input_dir, wave_file))
+  ## file name without extension
+  name_no_ext <- basename(tools::file_path_sans_ext(file.path(input_dir, wave_file)))
+  ## split by '.'
+  name_simplified <- stringr::str_split(name_no_ext, "\\.", simplify = T)[,1]
+  return(paste0(name_simplified, ".", tolower(ext)))
 }

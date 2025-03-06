@@ -1,14 +1,13 @@
 #' Archive validated records of AudioMoth recordings
 #' @details
-#' (1) Load table containing validated data
-#' (2) Copy extracted events for future references to local database, distinguishing between true and false positives and unverified events (e.g., species not of primary interest)
+#' (1) Load table containing validated data --> xlsx spreadsheet
+#' (2) Copy extracted events for future reference to a local database, distinguishing between true and false positives (unverified records are ignored)
 
-#'
 #' @param BirdNET_results path to verified BirdNET.xlsx file
 #' @param path2archive path to archive audio data
 #' @param keep.false keep audio classified as false positive? defaults to FALSE
 #' @param db local database (.xlsx) to which verified records are added
-#' @import magrittr
+#' @import magrittr dplyr
 #' @export
 #'
 BirdNET_archive_am <- function(
@@ -26,7 +25,21 @@ BirdNET_archive_am <- function(
   ## (1) Load from Excel ...
   ## ---------------------------------------------------------------------------
   if (!file.exists(BirdNET_results)) stop(BirdNET_results, "not found")
-  data_df <- readxl::read_xlsx(BirdNET_results) %>%
+  data_df <- readxl::read_xlsx(BirdNET_results, col_types = c(
+    'text', #Taxon
+    'text', #Detector
+    'text', #ID
+    'date', #T1
+    'date', #T2
+    'numeric', #Score
+    'text', #Verification
+    'text', #Correction
+    'text', #Quality
+    'date', #Comment
+    'date', #T0
+    'text', #File
+    'text'#png
+  )) %>%
     mutate(Comment = as.character(Comment))
   data_meta <- readxl::read_xlsx(BirdNET_results, sheet = "Meta")
   parent.folder = stringr::str_split(data_df[["File"]][1], "extracted")[[1]][[1]]
@@ -38,7 +51,6 @@ BirdNET_archive_am <- function(
   if (nrow(df) > 0) {
     out <- df[,c("Taxon", "Detector", "T1", "Score", "Comment", "File", "png")] %>%
       cbind(., data_meta)
-
   } else {
     message("No verified detections in ", BirdNET_results, "!")
 
@@ -86,8 +98,28 @@ BirdNET_archive_am <- function(
     dir.create(file.path(path2archive, taxon), showWarnings = FALSE)
   }
 
-  ## copy files to new location
-  ## --------------------------
+  ## copy files to new location ------------------------------------------------
+  ## check file exist first ... ------------------------------------------------
+
+  file.check <- 0
+  checks <- sapply(file.df$file, file.exists) %>% as.vector()
+  if (any(checks == FALSE) & ! interactive()) {
+    stop("Files to copy not found")
+  } else if (any(checks == FALSE) & interactive()) {
+    cat("Files not found at", dirname(file.df$file[1]), "\n")
+    file.check <- utils::menu(c("Yes", "No"), title = "Do you want to provide a valid path?")
+    if (file.check == 1) {
+      file.check <- utils::menu(LETTERS[1:10], title = paste("Change drive letter to ...", ""))
+    } else {
+      stop("Processing stopped")
+    }
+  }
+
+  if (file.check != 0) {
+    cat("Changing drive letter of file sources to", LETTERS[file.check])
+    substr(file.df$file, 1, 1) <- LETTERS[file.check]
+    substr(png.df$file, 1, 1) <- LETTERS[file.check]
+  }
   copy_results <- file.copy(
     from = file.df$file,
     to = file.df$file.new,
@@ -108,7 +140,10 @@ BirdNET_archive_am <- function(
     ## openxlsx does not handle format correctly ...
     db_old <- readxl::read_xlsx(path = db, sheet = 1)
 
-    if (any(duplicated(db_old))) warning("Database contains duplicates!")
+    if (any(duplicated(db_old))) {
+      warning("Database contains duplicates!")
+      db_old[which(duplicated(db_old)),]
+    }
 
     db_new <- try(rbind(db_old, output2))
     if (!methods::is(db_new, "try-error")) {

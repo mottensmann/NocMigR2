@@ -1,4 +1,4 @@
-#' Processing data analysed using BirdNET-Analyzer
+#' Processing data analysed using BattyBirdNET-Analyzer
 #'
 #' @inheritParams BirdNET_results2txt
 #' @param meta optional. data.frame with recording metadata
@@ -8,24 +8,23 @@
 #' @import magrittr
 #' @export
 #'
-BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FALSE) {
+BattyBirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = TRUE) {
 
   if (!dir.exists(path)) stop("provide valid path")
 
-  ## 1.) Summarise and tidyup BirdNET results-----------------------------------
+  ## 1.) Summarise and tidyup BattyBirdNET results-----------------------------------
   ## list files and handle case sensitivity
   wavs <- list.files(path = path, pattern = ".WAV",
                      ignore.case = T, recursive = recursive, full.names = T)
 
   ## erase empty files causing trouble downstream ... --------------------------
-  BirdNET_tidyup(path = path, recursive = recursive)
+  BattyBirdNET_tidyup(path = path, recursive = recursive)
 
   ## check for directories -----------------------------------------------------
   dirs <- list.dirs(path)
   dirs2 <- stringr::str_remove(dirs, pattern = path)
   if (any(dirs2 == 'extracted')) {
     warning("Detected folder", dirs[which(dirs2 == "extracted")], ".Ignore all wave files in this folder!\n")
-
   }
 
   ## exclude folder extracted if present ---------------------------------------
@@ -50,30 +49,27 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
   duration <- total_duration(path = path, recursive = recursive)[["duration"]]
 
   ## 2.) Tweak labels-----------------------------------------------------------
-  BirdNET_results <- BirdNET_results2txt(path = path, recursive = recursive)
-  BirdNET_table <- BirdNET_table(path = path, recursive = recursive)
+  BattyBirdNET_results <- BattyBirdNET_results2txt(path = path, recursive = recursive)
 
   ## 3.) list records-----------------------------------------------------------
   Records <- data.frame(
-    Taxon =  BirdNET_results$label2,
+    Taxon =  BattyBirdNET_results$label2,
     Detector = 'BirdNET',
     ID = NA,
-    #Date = lubridate::date(BirdNET_results$Start +  BirdNET_results$t1),
-    T1 = lubridate::as_datetime(BirdNET_results$Start +  BirdNET_results$t1),
-    T2 = lubridate::as_datetime(BirdNET_results$Start +  BirdNET_results$t2),
-    Score = BirdNET_results$Score,
+    #Date = lubridate::date(BattyBirdNET_results$Start +  BattyBirdNET_results$t1),
+    T1 = lubridate::as_datetime(BattyBirdNET_results$Start +  BattyBirdNET_results$t1),
+    T2 = lubridate::as_datetime(BattyBirdNET_results$Start +  BattyBirdNET_results$t2),
+    Score = BattyBirdNET_results$Score,
     Verification = NA,
     Correction = NA,
     Quality = NA,
     Comment = NA,
-    T0 = lubridate::as_datetime(BirdNET_results$Start),
-    File =  BirdNET_results$file)
+    T0 = lubridate::as_datetime(BattyBirdNET_results$Start),
+    File =  BattyBirdNET_results$file)
 
   if (is.null(meta)) {
     out <- list(
       Records = Records,
-      #Records.dd = BirdNET_table$records.day,
-      #Records.hh = BirdNET_table$records.hour,
       Meta = data.frame(From = from,
                         To = to,
                         Duration = duration))
@@ -106,14 +102,12 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
 
     out <- list(
       Records = Records,
-      #Records.dd = BirdNET_table$records.day,
-      #Records.hh = BirdNET_table$records.hour,
       Meta = meta)
   }
 
   ## export to xlsx file -------------------------------------------------------
-  openxlsx::write.xlsx(x = out, file = file.path(path, "BirdNET.xlsx"), overwrite = T)
-  cat("Created", file.path(path, "BirdNET.xlsx"), "\n")
+  openxlsx::write.xlsx(x = out, file = file.path(path, "BattyBirdNET.xlsx"), overwrite = T)
+  cat("Created", file.path(path, "BattyBirdNET.xlsx"), "\n")
   return(out)
 
 }
