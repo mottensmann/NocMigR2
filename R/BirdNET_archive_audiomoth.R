@@ -35,7 +35,7 @@ BirdNET_archive_am <- function(
     'text', #Verification
     'text', #Correction
     'text', #Quality
-    'date', #Comment
+    'text', #Comment
     'date', #T0
     'text', #File
     'text'#png
