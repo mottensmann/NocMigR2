@@ -692,3 +692,35 @@ remove_decimal_seconds <- function(wave_file, input_dir) {
   name_simplified <- stringr::str_split(name_no_ext, "\\.", simplify = T)[,1]
   return(paste0(name_simplified, ".", tolower(ext)))
 }
+
+#' Rename file names to YYYYMMDD_HHMMSS format
+#' remove junk from file names and keep only date & time (ie last 15 characters YYYYMMDD_HHMMSS)
+#' do not change files in subfolder extracted
+#'
+#' @param input_dir input folder
+#' @param pattern file extention to look for
+#'
+rename2DateTime <- function(input_dir, pattern = ".WAV") {
+
+  ## list files based on pattern
+  wave_files <- list.files(input_dir, full.names = T, recursive = T, pattern = pattern)
+
+  # Filter out any files from the folder "extread"
+  wave_files <- wave_files[!grepl("extracted/", wave_files)]
+
+  ## Retrieve date & time
+  files_new <- substr(wave_files, nchar(wave_files) - 14 - nchar(pattern), nchar(wave_files))
+
+  ## compare strings
+  if (all.equal(basename(wave_files), files_new)) {
+    cat("Files already named correctly!")
+  } else {
+    x <- file.rename(from = file.path(dirname(wave_files), basename(wave_files)),
+                     to = file.path(dirname(wave_files), files_new))
+    return(x)
+  }
+
+}
+
+
+

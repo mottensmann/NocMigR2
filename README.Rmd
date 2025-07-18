@@ -153,6 +153,8 @@ ___
 
 **Using BirdNET-Analyzer to process audio data**
 
+*Installation and usage, including main arguments of BirdNET-Analyzer have changed since this documentation has been created. See https://birdnet-team.github.io/BirdNET-Analyzer/usage/cli.html for details* 
+
 ##### Prerequisites:
 
 ###### On windows:

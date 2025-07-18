@@ -8,7 +8,8 @@ BirdNET_archive_am(
   BirdNET_results = NULL,
   path2archive = NULL,
   keep.false = FALSE,
-  db = NULL
+  db = NULL,
+  png = TRUE
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ BirdNET_archive_am(
 \item{keep.false}{keep audio classified as false positive? defaults to FALSE}
 
 \item{db}{local database (.xlsx) to which verified records are added}
+
+\item{png}{logical. defaults to T}
 }
 \description{
 Archive validated records of AudioMoth recordings
