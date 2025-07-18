@@ -7,6 +7,7 @@
 #' @param path2archive path to archive audio data
 #' @param keep.false keep audio classified as false positive? defaults to FALSE
 #' @param db local database (.xlsx) to which verified records are added
+#' @param png logical. defaults to T
 #' @import magrittr dplyr
 #' @export
 #'
@@ -14,7 +15,8 @@ BirdNET_archive_am <- function(
     BirdNET_results = NULL,
     path2archive = NULL,
     keep.false = FALSE,
-    db = NULL) {
+    db = NULL,
+    png = TRUE) {
 
   ## binding for global variables to please checks ...
   Verification <- mutate <- Comment <- T1 <- Taxon <- Hour <- n <- . <- child <- file.new <- output <- NA
@@ -25,22 +27,42 @@ BirdNET_archive_am <- function(
   ## (1) Load from Excel ...
   ## ---------------------------------------------------------------------------
   if (!file.exists(BirdNET_results)) stop(BirdNET_results, "not found")
-  data_df <- readxl::read_xlsx(BirdNET_results, col_types = c(
-    'text', #Taxon
-    'text', #Detector
-    'text', #ID
-    'date', #T1
-    'date', #T2
-    'numeric', #Score
-    'text', #Verification
-    'text', #Correction
-    'text', #Quality
-    'text', #Comment
-    'date', #T0
-    'text', #File
-    'text'#png
-  )) %>%
-    mutate(Comment = as.character(Comment))
+
+  if (isTRUE(png)) {
+    data_df <- readxl::read_xlsx(BirdNET_results, col_types = c(
+      'text', #Taxon
+      'text', #Detector
+      'text', #ID
+      'date', #T1
+      'date', #T2
+      'numeric', #Score
+      'text', #Verification
+      'text', #Correction
+      'text', #Quality
+      'text', #Comment
+      'date', #T0
+      'text', #File
+      'text'#png
+    )) %>%
+      mutate(Comment = as.character(Comment))
+  } else if (!isTRUE(png)) {
+    data_df <- readxl::read_xlsx(BirdNET_results, col_types = c(
+      'text', #Taxon
+      'text', #Detector
+      'text', #ID
+      'date', #T1
+      'date', #T2
+      'numeric', #Score
+      'text', #Verification
+      'text', #Correction
+      'text', #Quality
+      'text', #Comment
+      'date', #T0
+      'text' #File
+    )) %>%
+      mutate(Comment = as.character(Comment))
+  }
+
   data_meta <- readxl::read_xlsx(BirdNET_results, sheet = "Meta")
   parent.folder = stringr::str_split(data_df[["File"]][1], "extracted")[[1]][[1]]
 
@@ -49,8 +71,14 @@ BirdNET_archive_am <- function(
   df <- dplyr::filter(data_df, Verification %in% c("T", "TRUE", "true postive"))
 
   if (nrow(df) > 0) {
-    out <- df[,c("Taxon", "Detector", "T1", "Score", "Comment", "File", "png")] %>%
-      cbind(., data_meta)
+    if (isTRUE(png)) {
+      out <- df[,c("Taxon", "Detector", "T1", "Score", "Comment", "File", "png")] %>%
+        cbind(., data_meta)
+    } else {
+      out <- df[,c("Taxon", "Detector", "T1", "Score", "Comment", "File")] %>%
+        cbind(., data_meta)
+    }
+
   } else {
     message("No verified detections in ", BirdNET_results, "!")
 
@@ -74,23 +102,30 @@ BirdNET_archive_am <- function(
     })) %>%
     dplyr::mutate(file.new = file.path(path2archive, child))
 
+  if (isTRUE(png)) {
+    png.df <- data.frame(
+      file = out[["png"]],
+      parent = stringr::str_split(out[["png"]][1], "extracted")[[1]][[1]],
+      child = sapply(out[["png"]], function(x) {
+        stringr::str_split(x, "extracted")[[1]][[2]]
+      })) %>%
+      dplyr::mutate(file.new = file.path(path2archive, file.df$child)) %>%
+      dplyr::mutate(file.new = stringr::str_replace(file.new, ".WAV", ".png"))
 
-  png.df <- data.frame(
-    file = out[["png"]],
-    parent = stringr::str_split(out[["png"]][1], "extracted")[[1]][[1]],
-    child = sapply(out[["png"]], function(x) {
-      stringr::str_split(x, "extracted")[[1]][[2]]
-    })) %>%
-    dplyr::mutate(file.new = file.path(path2archive, file.df$child)) %>%
-    dplyr::mutate(file.new = stringr::str_replace(file.new, ".WAV", ".png"))
+    out <- out %>%
+      dplyr::mutate(
+        File = file.df$file.new,
+        png = png.df$file.new
+      )
+  } else {
+    out <- out %>%
+      dplyr::mutate(
+        File = file.df$file.new,
+        png = NA
+      )
+  }
 
   taxa <- unique(out$Taxon)
-
-  out <- out %>%
-    dplyr::mutate(
-      File = file.df$file.new,
-      png = png.df$file.new
-    )
 
   ## Attempt to create sub dirs
   ## --------------------------
@@ -126,11 +161,13 @@ BirdNET_archive_am <- function(
     overwrite = FALSE,
     copy.date = TRUE)
 
-  copy_results <- file.copy(
-    from = png.df$file,
-    to = png.df$file.new,
-    overwrite = FALSE,
-    copy.date = TRUE)
+  if (isTRUE(png)) {
+    copy_results <- file.copy(
+      from = png.df$file,
+      to = png.df$file.new,
+      overwrite = FALSE,
+      copy.date = TRUE)
+  }
 
   ## read db if existing ...
   if (file.exists(db)) {
@@ -176,8 +213,11 @@ BirdNET_archive_am <- function(
   hLink.wav <- df$File
   class(hLink.wav) <- "hyperlink"
 
-  hLink.png <- df$png
-  class(hLink.png) <- "hyperlink"
+  if (isTRUE(png)) {
+    hLink.png <- df$png
+    class(hLink.png) <- "hyperlink"
+
+  }
 
   wb <- openxlsx::loadWorkbook(db)
   openxlsx::writeData(wb = wb,
@@ -186,12 +226,14 @@ BirdNET_archive_am <- function(
                       startCol = 6,
                       colNames = FALSE,
                       startRow = 2)
-  openxlsx::writeData(wb = wb,
-                      sheet = 1,
-                      x = hLink.png,
-                      startCol = 7,
-                      colNames = FALSE,
-                      startRow = 2)
+  if (isTRUE(png)) {
+    openxlsx::writeData(wb = wb,
+                        sheet = 1,
+                        x = hLink.png,
+                        startCol = 7,
+                        colNames = FALSE,
+                        startRow = 2)
+  }
 
   openxlsx::saveWorkbook(wb, db, overwrite = TRUE)
 
