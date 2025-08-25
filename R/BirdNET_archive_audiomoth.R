@@ -24,8 +24,7 @@ BirdNET_archive_am <- function(
   if (!dir.exists(path2archive)) stop("provide valid path2archive")
   path2archive <- tools::file_path_as_absolute(path2archive)
 
-  ## (1) Load from Excel ...
-  ## ---------------------------------------------------------------------------
+  ## (1) Load restults from spreadsheet file -----------------------------------
   if (!file.exists(BirdNET_results)) stop(BirdNET_results, "not found")
 
   if (isTRUE(png)) {
@@ -66,8 +65,7 @@ BirdNET_archive_am <- function(
   data_meta <- readxl::read_xlsx(BirdNET_results, sheet = "Meta")
   parent.folder = stringr::str_split(data_df[["File"]][1], "extracted")[[1]][[1]]
 
-  ## keep just verified detections
-  ## -----------------------------------------------------
+  ## keep just verified detections ---------------------------------------------
   df <- dplyr::filter(data_df, Verification %in% c("T", "TRUE", "true postive"))
 
   if (nrow(df) > 0) {
@@ -92,8 +90,7 @@ BirdNET_archive_am <- function(
       cbind(., data_meta)
   }
 
-  ## Transfer files to archive
-  ## ---------------------------------------------------------------------------
+  ## Transfer records to archive -----------------------------------------------
   file.df <- data.frame(
     file = out[["File"]],
     parent = stringr::str_split(out[["File"]][1], "extracted")[[1]][[1]],
@@ -127,14 +124,13 @@ BirdNET_archive_am <- function(
 
   taxa <- unique(out$Taxon)
 
-  ## Attempt to create sub dirs
-  ## --------------------------
+  ## Attempt to create sub dirs for detected taxa ------------------------------
   for (taxon in taxa) {
     dir.create(file.path(path2archive, taxon), showWarnings = FALSE)
   }
 
   ## copy files to new location ------------------------------------------------
-  ## check file exist first ... ------------------------------------------------
+  ## check file exist first
 
   file.check <- 0
   checks <- sapply(file.df$file, file.exists) %>% as.vector()
@@ -169,7 +165,7 @@ BirdNET_archive_am <- function(
       copy.date = TRUE)
   }
 
-  ## read db if existing ...
+  ## read db if existing -------------------------------------------------------
   if (file.exists(db)) {
     output2 <- out
 
@@ -180,6 +176,11 @@ BirdNET_archive_am <- function(
     if (any(duplicated(db_old))) {
       warning("Database contains duplicates!")
       db_old[which(duplicated(db_old)),]
+    }
+
+    ### check if column png exists ---------------------------------------------
+    if ("png" %in% colnames(db_old) & !"png" %in% colnames(output2)) {
+      output2[["png"]] <- NA
     }
 
     db_new <- try(rbind(db_old, output2))
