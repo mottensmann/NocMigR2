@@ -30,7 +30,7 @@ BirdNET_results2txt <- function(path = NULL, recursive = FALSE) {
   }
 
 
-  if (length(BirdNET.results.files >= 1)) {
+  if (length(BirdNET.results.files) >= 1) {
     BirdNET.results.list <- lapply(BirdNET.results.files, seewave::read.audacity)
     results <- data.frame()
 
