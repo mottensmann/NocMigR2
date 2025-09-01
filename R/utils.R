@@ -699,6 +699,7 @@ remove_decimal_seconds <- function(wave_file, input_dir) {
 #'
 #' @param input_dir input folder
 #' @param pattern file extention to look for
+#' @export
 #'
 rename2DateTime <- function(input_dir, pattern = ".WAV") {
 
@@ -711,14 +712,26 @@ rename2DateTime <- function(input_dir, pattern = ".WAV") {
   ## Retrieve date & time
   files_new <- substr(wave_files, nchar(wave_files) - 14 - nchar(pattern), nchar(wave_files))
 
+  # Mon Sep  1 08:44:22 2025 ------------------------------
+  # Check more flexible solution to compare strings
+
   ## compare strings
-  if (all.equal(basename(wave_files), files_new)) {
+  if (all(identical(basename(wave_files), files_new))) {
     cat("Files already named correctly!")
   } else {
     x <- file.rename(from = file.path(dirname(wave_files), basename(wave_files)),
                      to = file.path(dirname(wave_files), files_new))
-    return(x)
   }
+
+
+  # ## compare strings
+  # if (all.equal(basename(wave_files), files_new)) {
+  #   cat("Files already named correctly!")
+  # } else {
+  #   x <- file.rename(from = file.path(dirname(wave_files), basename(wave_files)),
+  #                    to = file.path(dirname(wave_files), files_new))
+  #   return(x)
+  # }
 
 }
 
