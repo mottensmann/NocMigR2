@@ -9,7 +9,7 @@ BirdNET_cleanup(path = NULL, cleanup = FALSE)
 \arguments{
 \item{path}{path}
 
-\item{cleanup}{logical. defaults to FALSE. Set to TRUE to acutally remove files!}
+\item{cleanup}{logical. defaults to FALSE. Set to TRUE to actually remove files!}
 }
 \description{
 Removes all files in a folder

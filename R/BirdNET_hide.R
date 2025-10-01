@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Temporarily move all wav file that where already processed, i.e. `BirdNET.results.txt` exists to another location to avoid rerunning analysis by `BirdNET_analyzer`.
-#' Ideally, this is coded directly in analyze.py or its auxilarly funtions defined in utils.py
+#' Ideally, this is coded directly in analyze.py or its auxiliary functions defined in utils.py
 #'
 #' @param path path
 #' @param hidden.path path
