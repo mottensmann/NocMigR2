@@ -711,5 +711,18 @@ rename2DateTime <- function(input_dir, pattern = ".WAV") {
                    to = file.path(dirname(wave_files), files_new))
 }
 
-
-
+#' Extract datetime from file name
+#'
+#' @param x file path
+#' @return datetime object
+#' @export
+#'
+get_timestamp <- function(x) {
+  lubridate::make_datetime(
+    year = as.numeric(substr(basename(x), 1, 4)),
+    month = as.numeric(substr(basename(x), 5, 6)),
+    day = as.numeric(substr(basename(x), 7, 8)),
+    hour = as.numeric(substr(basename(x), 10, 11)),
+    min =  as.numeric(substr(basename(x), 12, 13)),
+    sec = as.numeric(substr(basename(x), 14, 15)))
+}
