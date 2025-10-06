@@ -16,7 +16,7 @@ chirpity_extract(
 \arguments{
 \item{path}{path. Relative path will be converted to absolute path.}
 
-\item{input}{path to xlsx, defaults to file.path(path, "BirdNET_Chirpity.xlsx")}
+\item{input}{xlsx file containing BirdNET and chirpity results}
 
 \item{output}{path to write wav files}
 

@@ -18,7 +18,7 @@ chirpity2BirdNET <- function(
     birdnet = file.path(path, "BirdNET.xlsx"),
     chirpity = file.path(path, "Chirpity.csv"),
     output = file.path(path, "BirdNET_Chirpity.xlsx"),
-    ignore_terms = c('call', 'flight call')) {
+    ignore_terms = c('call', 'flight call', 'song')) {
 
   ## no visible binding for global variable ------------------
   Common.name <- Model <- File <- Start..s. <- Confidence <-
@@ -26,6 +26,7 @@ chirpity2BirdNET <- function(
 
   ## read birdnet --------------------------------------------
   birdnet_output <- readxl::read_xlsx(birdnet)
+  birdnet_meta <- readxl::read_xlsx(birdnet, sheet = "Meta")
 
   ## read chirpity -------------------------------------------
   chirpity_output <- utils::read.csv(chirpity) %>%
@@ -86,6 +87,15 @@ chirpity2BirdNET <- function(
     dplyr::arrange(Taxon, T1)
 
   ## export to xlsx ------------------------------------------
+
+  # Wed Oct  8 20:37:49 2025 ------------------------------
+  # export records and meta
+#   out <- list(
+#     Records = Records,
+#     #Records.dd = BirdNET_table$records.day,
+#     #Records.hh = BirdNET_table$records.hour,
+#     Meta = meta)
+# }
   openxlsx::write.xlsx(x = merged, file = output, overwrite = T)
 
   ## create hyper links --------------------------------------

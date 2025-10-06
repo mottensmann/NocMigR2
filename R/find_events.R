@@ -5,7 +5,6 @@
 #'
 #' @param wav.file Audio file. Currently supported are WAV or MP3 files.
 #' @param overwrite logical
-#' @param ... Not yet implemented! optional arguments passed on to \code{\link[bioacoustics]{threshold_detection}}.
 #' @inheritParams bioacoustics::threshold_detection
 #' @param audacity logical. If TRUE export audacity lables as txt file
 #' @return list (see \code{\link[bioacoustics]{threshold_detection}})
@@ -38,22 +37,12 @@ find_events <- function(wav.file = NULL,
                         SNR_thr = 4,
                         angle_thr = 125,
                         NWS = 1500,
-                        time_scale = 2,
-                        ...) {
-
-  ## get optional arguments in any
-  ## ---------------------------------------------------------------------------
-  #mcall = as.list(match.call())[-1L]
-  ## check for optional arguments in the function call, take defaults, if missing
-  #arg_list <- list()
- #do.call(FUN, args = c(list(x = x,y = y), mcall, list(...)))
+                        time_scale = 2) {
 
   ## get file extension
-  ## ---------------------------------------------------------------------------
   file_format <- tools::file_ext(wav.file)
 
   ## check if execution is needed
-  ## ---------------------------------------------------------------------------
   check <- TRUE
 
   if (overwrite == FALSE) {
@@ -79,7 +68,6 @@ find_events <- function(wav.file = NULL,
       end_thr = end_thr,
       SNR_thr = SNR_thr,
       angle_thr = angle_thr,
-      #duration_thr = duration_thr,
       NWS = NWS,
       settings = TRUE,
       acoustic_feat = TRUE,
@@ -90,7 +78,6 @@ find_events <- function(wav.file = NULL,
 
     if (!is.null(TD$data) & isTRUE(audacity)) {
       ## write audacity marks based on events: times in seconds
-      ## -----------------------------------------------------------------------------
 
       ## ask if file has had date_time header for pretty labels
       head <- stringr::str_remove(TD$data$event_data$filename, paste0(".", file_format))
@@ -109,7 +96,6 @@ find_events <- function(wav.file = NULL,
         origin <- lubridate::make_datetime(2000, 01, 01, 0, 0, 0)
       }
 
-      ##
       t <- TD$data$event_data$starting_time
       t1 <-
         (as.numeric(substr(t, 1,2)) * 60 * 60) +

@@ -9,7 +9,7 @@ chirpity2BirdNET(
   birdnet = file.path(path, "BirdNET.xlsx"),
   chirpity = file.path(path, "Chirpity.csv"),
   output = file.path(path, "BirdNET_Chirpity.xlsx"),
-  ignore_terms = c("call", "flight call")
+  ignore_terms = c("call", "flight call", "song")
 )
 }
 \arguments{

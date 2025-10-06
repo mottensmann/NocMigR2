@@ -30,9 +30,11 @@ Imports:
     stringr,
     suncalc,
     tuneR,
-    seewave,
-    warbleR,
-RoxygenNote: 7.3.2
+    seewave
+Remotes:
+  maRce10/warbleR,
+  mottensmann/BirdR
+RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0),
     reticulate
