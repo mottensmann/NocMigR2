@@ -83,20 +83,13 @@ chirpity2BirdNET <- function(
 
   ## sort rows -----------------------------------------------
   # Sort by name (A-Z), then age (ascending)
-  merged <- merged %>%
-    dplyr::arrange(Taxon, T1)
+  # merged <- merged %>%
+  #   dplyr::arrange(Taxon, T1)
 
   ## export to xlsx ------------------------------------------
 
-  # Wed Oct  8 20:37:49 2025 ------------------------------
-  # export records and meta
-#   out <- list(
-#     Records = Records,
-#     #Records.dd = BirdNET_table$records.day,
-#     #Records.hh = BirdNET_table$records.hour,
-#     Meta = meta)
-# }
-  openxlsx::write.xlsx(x = merged, file = output, overwrite = T)
+  out <- list(Records = merged, Meta = birdnet_meta)
+  openxlsx::write.xlsx(x = out, file = output, overwrite = T)
 
   ## create hyper links --------------------------------------
   if (!'png' %in% names(birdnet_output)) { ## no spectro
