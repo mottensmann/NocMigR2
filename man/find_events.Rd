@@ -21,8 +21,7 @@ find_events(
   SNR_thr = 4,
   angle_thr = 125,
   NWS = 1500,
-  time_scale = 2,
-  ...
+  time_scale = 2
 )
 }
 \arguments{
@@ -77,8 +76,6 @@ Default setting is 100 ms.}
 
 \item{time_scale}{numeric. Time resolution of the spectrogram in milliseconds (ms) per pixel (px). Default setting is 0.1 ms for bat echolocation calls.
 A default of 2 ms/px is recommended for most bird vocalizations.}
-
-\item{...}{Not yet implemented! optional arguments passed on to \code{\link[bioacoustics]{threshold_detection}}.}
 }
 \value{
 list (see \code{\link[bioacoustics]{threshold_detection}})

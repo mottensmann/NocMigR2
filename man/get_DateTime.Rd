@@ -17,3 +17,4 @@ data frame
 \description{
 Get date and time from file name of the form `YYYYMMDD_HHMMSS`
 }
+\keyword{internal}

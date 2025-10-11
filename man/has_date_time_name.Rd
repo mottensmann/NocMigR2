@@ -12,3 +12,4 @@ has_date_time_name(files)
 \description{
 check if file name is composed of date and time string
 }
+\keyword{internal}

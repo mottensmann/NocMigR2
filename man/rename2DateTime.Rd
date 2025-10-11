@@ -3,7 +3,7 @@
 \name{rename2DateTime}
 \alias{rename2DateTime}
 \title{Rename file names to YYYYMMDD_HHMMSS format
-remove junk from file names and keep only date & time (ie last 15 characters YYYYMMDD_HHMMSS)}
+remove junk from file names and keep only date & time (ie last 15 characters `YYYYMMDD_HHMMSS`)}
 \usage{
 rename2DateTime(input_dir, pattern = ".WAV")
 }
@@ -14,5 +14,6 @@ rename2DateTime(input_dir, pattern = ".WAV")
 }
 \description{
 Rename file names to YYYYMMDD_HHMMSS format
-remove junk from file names and keep only date & time (ie last 15 characters YYYYMMDD_HHMMSS)
+remove junk from file names and keep only date & time (ie last 15 characters `YYYYMMDD_HHMMSS`)
 }
+\keyword{internal}

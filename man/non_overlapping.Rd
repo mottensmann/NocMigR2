@@ -12,3 +12,4 @@ non_overlapping(df)
 \description{
 Detects overlapping selections and merges them using \code{\link[warbleR]{overlapping_sels}}
 }
+\keyword{internal}

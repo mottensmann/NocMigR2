@@ -7,11 +7,11 @@
 get_timestamp(x)
 }
 \arguments{
-\item{x}{file path}
+\item{x}{file name}
 }
 \value{
 datetime object
 }
 \description{
-Extract datetime from file name
+Extract date and time from file name, assuming a prefix of the form `YYYYMMDD_HHMMSS`
 }

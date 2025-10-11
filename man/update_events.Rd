@@ -12,3 +12,4 @@ update_events(txt = NULL)
 \description{
 Update events: Create threshold_detection from audacity labels
 }
+\keyword{internal}
