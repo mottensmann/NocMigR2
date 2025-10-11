@@ -30,12 +30,16 @@ Imports:
     stringr,
     suncalc,
     tuneR,
-    seewave
+    seewave,
+    warbleR
 Remotes:
   maRce10/warbleR,
   mottensmann/BirdR
 RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0),
-    reticulate
+    reticulate,
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
+VignetteBuilder: knitr
