@@ -16,3 +16,6 @@ BirdNET_man_detec(path, spectro = FALSE, recursive = FALSE)
 \description{
 Append manually recovered detections to existing xlsx file
 }
+\details{
+Reads audacity labels from a text file and adds to BirdNET.xlsx
+}

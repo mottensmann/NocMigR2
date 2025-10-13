@@ -1,6 +1,3 @@
-#### Internal functions ####
-## ---------------------------------------------------------------------------##
-
 #' Read AudioMoth configuration file
 #'
 #' Reads and parses an AudioMoth configuration file.
@@ -107,6 +104,7 @@ starting_time2seconds <- function(t) {
 
 #' check if file name is composed of date and time string
 #' @param files character vector
+#' @keywords internal
 #'
 has_date_time_name <- function(files) {
   ## check for expected nchar --> expect 15 without file extension
@@ -126,6 +124,7 @@ has_date_time_name <- function(files) {
 #' condense output of find_events
 #' @param threshold_detection
 #' object of class threshold_detection (see \code{\link[bioacoustics]{threshold_detection}})
+#' @keywords internal
 #'
 inspect_events <- function(threshold_detection = NULL) {
   threshold_detection[["data"]][["event_data"]][,c("filename", "starting_time", "duration", "freq_max_amp", "snr")]
@@ -134,6 +133,7 @@ inspect_events <- function(threshold_detection = NULL) {
 #' Update events: Create threshold_detection from audacity labels
 #'
 #' @param txt audacity labels
+#' @keywords internal
 #'
 update_events <- function(txt = NULL) {
   df <- seewave::read.audacity(file = txt, format = "base")
@@ -168,6 +168,8 @@ update_events <- function(txt = NULL) {
 #' Check for and handle overlapping selections
 #' @description Detects overlapping selections and merges them using \code{\link[warbleR]{overlapping_sels}}
 #' @param df data frame with event data created by \code{\link[bioacoustics]{threshold_detection}}
+#' @importFrom warbleR overlapping_sels
+#' @keywords internal
 #'
 non_overlapping <- function(df) {
   ## mimic selec_table of warbler package
@@ -209,6 +211,7 @@ non_overlapping <- function(df) {
 #' @param target original recording
 #' @param target.path original recording path
 #' @return data frame
+#' @keywords internal
 #'
 get_DateTime <- function(target, target.path) {
 
@@ -293,6 +296,7 @@ total_duration <- function(path, format = "WAV", recursive = FALSE) {
 #'
 #' @param path path
 #' @param recursive logical
+#' @keywords internal
 #'
 BirdNET_labels2results <- function(path, recursive = FALSE) {
 
@@ -357,7 +361,7 @@ BirdNET_labels2results <- function(path, recursive = FALSE) {
 #' (3) Ensure wav files, BirdNET_results.txt and BirdNET2.xlsx files share the same path
 #'
 #' @inheritParams BirdNET_extract
-#'
+#' @keywords internal
 #'
 BirdNET_extract2 <- function(path = NULL,
                              taxon = NULL,
@@ -451,7 +455,9 @@ BirdNET_extract2 <- function(path = NULL,
       wav <- stringr::str_replace(wav, 'WAV', 'wav')
       format <- ".wav"
     }
-    if (!file.exists(wav)) stop(wav, "not found")
+    if (!file.exists(wav)) {
+      stop(wav, " not found")
+    }
 
     ##  select event time stamps
     t0 <- xlsx[[r, "T0"]]; t1 <- xlsx[[r, "T1"]]; t2 <- xlsx[[r, "T2"]]
@@ -463,8 +469,7 @@ BirdNET_extract2 <- function(path = NULL,
       paste0(
         xlsx[[r, "Taxon"]], "_",
         trimws(stringr::str_replace_all(
-          as.character(t1), c(":" = "", "-" = "", " " = "_"))), format))
-
+          substr(as.character(t1), 1, 19), c(":" = "", "-" = "", " " = "_"))), format))
 
     ## add buffer around event
     from = as.numeric(difftime(t1, t0, units = "secs")) - sec
@@ -516,8 +521,6 @@ BirdNET_extract2 <- function(path = NULL,
 
     return(name)
   })
-
-
 
 
   ## put hyperlink in excel sheet?
@@ -628,6 +631,7 @@ xlsx_append <- function(path, data) {
 #' Select samples for validation
 #'
 #' @param x  numeric vector giving indices
+#' @keywords internal
 #'
 sample_rows <- function(x) {
   if (length(x) == 1) {
@@ -682,6 +686,7 @@ audio_filter <- function(input_dir,
 #' Eliminate postfix decimal seconds from file names
 #' @param wave_file file name
 #' @param input_dir path to file to check file extension
+#' @keywords internal
 #'
 remove_decimal_seconds <- function(wave_file, input_dir) {
   ## get extension
@@ -694,26 +699,20 @@ remove_decimal_seconds <- function(wave_file, input_dir) {
 }
 
 #' Rename file names to YYYYMMDD_HHMMSS format
-#' remove junk from file names and keep only date & time (ie last 15 characters YYYYMMDD_HHMMSS)
-#' do not change files in subfolder extracted
-#'
 #' @param input_dir input folder
 #' @param pattern file extention to look for
-#' @export
+#' @keywords internal
 #'
 rename2DateTime <- function(input_dir, pattern = ".WAV") {
 
   ## list files based on pattern
   wave_files <- list.files(input_dir, full.names = T, recursive = T, pattern = pattern)
 
-  # Filter out any files from the folder "extread"
+  # Filter out any files from the folder "extracted"
   wave_files <- wave_files[!grepl("extracted/", wave_files)]
 
   ## Retrieve date & time
   files_new <- substr(wave_files, nchar(wave_files) - 14 - nchar(pattern), nchar(wave_files))
-
-  # Mon Sep  1 08:44:22 2025 ------------------------------
-  # Check more flexible solution to compare strings
 
   ## compare strings
   if (all(identical(basename(wave_files), files_new))) {
@@ -723,17 +722,24 @@ rename2DateTime <- function(input_dir, pattern = ".WAV") {
                      to = file.path(dirname(wave_files), files_new))
   }
 
-
-  # ## compare strings
-  # if (all.equal(basename(wave_files), files_new)) {
-  #   cat("Files already named correctly!")
-  # } else {
-  #   x <- file.rename(from = file.path(dirname(wave_files), basename(wave_files)),
-  #                    to = file.path(dirname(wave_files), files_new))
-  #   return(x)
-  # }
-
 }
 
 
-
+#' Extract datetime from file name
+#'
+#' @description
+#' Extract date and time from file name, assuming a prefix of the form `YYYYMMDD_HHMMSS`
+#'
+#' @param x file name
+#' @return datetime object
+#' @export
+#'
+get_timestamp <- function(x) {
+  lubridate::make_datetime(
+    year = as.numeric(substr(basename(x), 1, 4)),
+    month = as.numeric(substr(basename(x), 5, 6)),
+    day = as.numeric(substr(basename(x), 7, 8)),
+    hour = as.numeric(substr(basename(x), 10, 11)),
+    min =  as.numeric(substr(basename(x), 12, 13)),
+    sec = as.numeric(substr(basename(x), 14, 15)))
+}

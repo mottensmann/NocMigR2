@@ -4,7 +4,7 @@
 #' Removes all files in a folder
 #'
 #' @param path path
-#' @param cleanup logical. defaults to FALSE. Set to TRUE to acutally remove files!
+#' @param cleanup logical. defaults to FALSE. Set to TRUE to actually remove files!
 #' @export
 #'
 BirdNET_cleanup <- function(path = NULL, cleanup = FALSE) {

@@ -14,3 +14,4 @@ remove_decimal_seconds(wave_file, input_dir)
 \description{
 Eliminate postfix decimal seconds from file names
 }
+\keyword{internal}

@@ -1,7 +1,7 @@
 #' Process NocMig session for downstream analysis
 #'
 #' @param parent.folder path
-#' @param child.folder optional. defaults to an emoty string \code{''}
+#' @param child.folder optional. defaults to an empty string \code{''}
 #' @param rename logical. defaults to \code{TRUE}
 #' @param segment_length optional numeric value. If specified, function \code{\link{split_wave}} is used to to segmenti long audio files in shorter segments. defaults to \code{NULL}
 #' @inheritParams rename_recording

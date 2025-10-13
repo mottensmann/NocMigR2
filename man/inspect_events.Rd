@@ -12,3 +12,4 @@ inspect_events(threshold_detection = NULL)
 \description{
 condense output of find_events
 }
+\keyword{internal}

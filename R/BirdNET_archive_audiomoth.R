@@ -124,6 +124,7 @@ BirdNET_archive_am <- function(
 
   taxa <- unique(out$Taxon)
 
+
   ## Attempt to create sub dirs for detected taxa ------------------------------
   for (taxon in taxa) {
     dir.create(file.path(path2archive, taxon), showWarnings = FALSE)

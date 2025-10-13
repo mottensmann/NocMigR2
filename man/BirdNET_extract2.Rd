@@ -41,3 +41,4 @@ Prerequisites:
 (2) Reshape output using function BirdNET (this package)
 (3) Ensure wav files, BirdNET_results.txt and BirdNET2.xlsx files share the same path
 }
+\keyword{internal}

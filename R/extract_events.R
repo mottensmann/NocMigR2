@@ -44,12 +44,10 @@ extract_events <- function(threshold_detection,
   format <- match.arg(format)
 
   ## check for existing output and drop a comment if found
-  ## ---------------------------------------------------------------------------
   previous_output <- list.files(path, "_extracted.WAV", ignore.case = TRUE)
   if (length(previous_output)) cat("\nExisting files '_extracted.WAV will be overwritten!\n")
 
   ## get df of interest
-  ## --------------------------------
   if (is.character(threshold_detection)) {
     df <- update_events(txt = threshold_detection)
     df$filename <- stringr::str_replace(df$filename, "txt", format)
@@ -78,7 +76,6 @@ extract_events <- function(threshold_detection,
   }
 
   ## get metadata of sound file
-  ## --------------------------------
   meta <- tuneR::readWave(file, header = T)
   length <- meta$samples/meta$sample.rate
 
