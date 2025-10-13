@@ -1,5 +1,9 @@
 #' Append manually recovered detections to existing xlsx file
 #'
+#' @details
+#' Reads audacity labels from a text file and adds to BirdNET.xlsx
+#'
+#'
 #' @inheritParams BirdNET
 #' @inheritParams BirdNET_extract
 #' @param recursive logical
@@ -9,7 +13,6 @@ BirdNET_man_detec <- function(path, spectro = FALSE, recursive = FALSE) {
 
 
   ## check for manual detections
-  ## ---------------------------------------------------------------------------
   Records <- BirdNET_labels2results(path = path, recursive = recursive)
 
   if (nrow(Records) >= 1) {
@@ -52,7 +55,8 @@ BirdNET_man_detec <- function(path, spectro = FALSE, recursive = FALSE) {
 
     ## create hyperlink ... check order?
     class(db2$File) <- "hyperlink"
-    class(db2$png) <- "hyperlink"
+
+    if ("png" %in% names(db2)) class(db2$png) <- "hyperlink"
 
     wb <- openxlsx::loadWorkbook(db1)
     openxlsx::writeData(wb = wb,

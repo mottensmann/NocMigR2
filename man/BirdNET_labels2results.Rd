@@ -14,3 +14,4 @@ BirdNET_labels2results(path, recursive = FALSE)
 \description{
 Read BirdNET_labels.txt
 }
+\keyword{internal}

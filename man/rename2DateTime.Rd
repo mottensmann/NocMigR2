@@ -2,9 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{rename2DateTime}
 \alias{rename2DateTime}
-\title{Rename file names to YYYYMMDD_HHMMSS format
-remove junk from file names and keep only date & time (ie last 15 characters YYYYMMDD_HHMMSS)
-do not change files in subfolder extracted}
+\title{Rename file names to YYYYMMDD_HHMMSS format}
 \usage{
 rename2DateTime(input_dir, pattern = ".WAV")
 }
@@ -15,6 +13,5 @@ rename2DateTime(input_dir, pattern = ".WAV")
 }
 \description{
 Rename file names to YYYYMMDD_HHMMSS format
-remove junk from file names and keep only date & time (ie last 15 characters YYYYMMDD_HHMMSS)
-do not change files in subfolder extracted
 }
+\keyword{internal}

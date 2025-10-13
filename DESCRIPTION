@@ -1,13 +1,13 @@
 Package: NocMigR2
 Type: Package
 Title: A Suite of Functions to Play with NocMig and Other Long-Term Recordings
-Version: 0.1.0
-Date: 2024-08-06
+Version: 0.1.1
+Date: 2025-10-13
 Authors@R: c(
     person("Meinolf", "Ottensmann", email = "meinolf.ottensmann@web.de", role = c("aut","cre"), 
     comment = c(ORCID = "0000-0003-3112-6928")))
 Description: Aiming to fulfil the following tasks: (1) Labelling audio data and events with proper time stamps. (2) Processing events annotated with BirdNET for manual verification using Audacity. (3) Formatting and archiving verified detections along with their audio reference (short wave files).
-License: MIT + file LICENSE
+License: GPL (>=2)
 Language: en-GB
 Encoding: UTF-8
 LazyData: true
@@ -31,9 +31,15 @@ Imports:
     suncalc,
     tuneR,
     seewave,
-    warbleR,
-RoxygenNote: 7.3.2
+    warbleR
+Remotes:
+  maRce10/warbleR,
+  mottensmann/BirdR
+RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0),
-    reticulate
+    reticulate,
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
+VignetteBuilder: knitr

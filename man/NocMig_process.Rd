@@ -19,7 +19,7 @@ NocMig_process(
 \arguments{
 \item{parent.folder}{path}
 
-\item{child.folder}{optional. defaults to an emoty string \code{''}}
+\item{child.folder}{optional. defaults to an empty string \code{''}}
 
 \item{format}{audio format. Supported are \code{'wav'} and \code{'mp3'}}
 
