@@ -125,7 +125,7 @@ BirdNET_archive_am <- function(
     out <- out %>%
       dplyr::mutate(
         File = file.df$file.new,
-        png = '..'
+        png = 'none'
       )
   }
 
@@ -280,7 +280,6 @@ BirdNET_archive_am <- function(
   if (isTRUE(png)) {
     hLink.png <- df$png
     class(hLink.png) <- "hyperlink"
-
   }
 
   wb <- openxlsx::loadWorkbook(db)
