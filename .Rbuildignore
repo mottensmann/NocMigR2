@@ -4,4 +4,5 @@ README*
 BirdNET-Analyzer.Rmd
 BIO-NB-005
 Datenbank
-R/01_Debugger.R
+^\.positai$
+^\.claude$
