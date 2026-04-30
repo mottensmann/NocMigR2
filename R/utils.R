@@ -44,30 +44,36 @@ BirdNET_table <- function(path = NULL, recursive = FALSE) {
                                       recursive = recursive)
 
 
-  if (length(BirdNET.results.files >= 1)) {
+  if (length(BirdNET.results.files) >= 1) {
     # read audacity marks
     if (interactive()) {
       cat("Read BirdNET results:\n")
       df <- pbapply::pblapply(BirdNET.results.files,
                               readr::read_delim,
+                              delim = "\t",
+                              progress = FALSE,
                               show_col_types = FALSE,
-                              col_names = c("label", "date", "time", "x1", "score", "x2")) %>%
+                              col_names = c("start", "end", "label")) %>%
         do.call("rbind",.)
     } else {
       df <- lapply(BirdNET.results.files,
                    readr::read_delim,
+                   delim = "\t",
+                   progress = FALSE,
                    show_col_types = FALSE,
-                   col_names = c("label", "date", "time", "x1", "score", "x2")) %>%
+                   col_names = c("start", "end", "label")) %>%
         do.call("rbind",.)
     }
 
-    # retrieve species
-    df[["species"]] <- sapply(df$label, function(x) {
-      x1 <- stringr::str_split(x, pattern = "\t")[[1]]
-      x1[length(x1)]
-    })
-    # retrieve hour
-    df[["hour"]] <- lubridate::hour(df$time)
+    ## split label into single variables
+    df <- df %>%
+      mutate(
+        species = stringr::str_extract(label, "^.*(?=\\s\\d{4}-\\d{2}-\\d{2})"),
+        date    = as.Date(stringr::str_extract(label, "\\d{4}-\\d{2}-\\d{2}")),
+        time    = as.POSIXct(stringr::str_extract(label, "\\d{2}:\\d{2}:\\d{2}"),
+                             format = "%H:%M:%S"),
+        score   = as.numeric(stringr::str_extract(label, "\\d+\\.\\d+(?=\\s*\\])")),
+        hour = lubridate::hour(time))
 
     output <- df
 

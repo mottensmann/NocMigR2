@@ -56,12 +56,12 @@ BirdNET_results2txt <- function(path = NULL, recursive = FALSE) {
       ## check for special case: 00:00:00 & t1 = 0
       if (any(BirdNET.results.df$t1 == 0)) {
         indices <- which(BirdNET.results.df$t1 == 0)
-        for (i in indices) {
+        for (ii in indices) {
           time.sum <-
-            lubridate::hour(BirdNET.results.df$Start[i]) +
-            lubridate::minute(BirdNET.results.df$Start[i]) +
-            lubridate::second(BirdNET.results.df$Start[i])
-          if (time.sum == 0) BirdNET.results.df$t1[i] <- 1
+            lubridate::hour(BirdNET.results.df$Start[ii]) +
+            lubridate::minute(BirdNET.results.df$Start[ii]) +
+            lubridate::second(BirdNET.results.df$Start[ii])
+          if (time.sum == 0) BirdNET.results.df$t1[ii] <- 1
         }
       }
 

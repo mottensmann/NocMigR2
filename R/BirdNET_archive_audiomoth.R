@@ -43,7 +43,7 @@ BirdNET_archive_am <- function(
       'text', #File
       'text'#png
     )) %>%
-      mutate(Comment = as.character(Comment))
+      dplyr::mutate(Comment = as.character(Comment))
   } else if (!isTRUE(png)) {
     data_df <- readxl::read_xlsx(BirdNET_results, col_types = c(
       'text', #Taxon
@@ -59,7 +59,7 @@ BirdNET_archive_am <- function(
       'date', #T0
       'text' #File
     )) %>%
-      mutate(Comment = as.character(Comment))
+      dplyr::mutate(Comment = as.character(Comment))
   }
 
   data_meta <- readxl::read_xlsx(BirdNET_results, sheet = "Meta")
@@ -76,6 +76,13 @@ BirdNET_archive_am <- function(
       out <- df[,c("Taxon", "Detector", "T1", "Score", "Comment", "File")] %>%
         cbind(., data_meta)
     }
+    out <- out %>%
+      dplyr::mutate(Min_conf = as.numeric(Min_conf),
+                    Overlap = as.numeric(Overlap),
+                    Sensitivity = as.numeric(Sensitivity),
+                    Hz = as.numeric(Hz),
+                    Sleep = as.numeric(Sleep),
+                    Rec = as.numeric(Rec))
 
   } else {
     message("No verified detections in ", BirdNET_results, "!")
@@ -118,12 +125,11 @@ BirdNET_archive_am <- function(
     out <- out %>%
       dplyr::mutate(
         File = file.df$file.new,
-        png = NA
+        png = 'none'
       )
   }
 
   taxa <- unique(out$Taxon)
-
 
   ## Attempt to create sub dirs for detected taxa ------------------------------
   for (taxon in taxa) {
@@ -172,7 +178,63 @@ BirdNET_archive_am <- function(
 
     ## read db to detect duplicates before writing ...
     ## openxlsx does not handle format correctly ...
-    db_old <- readxl::read_xlsx(path = db, sheet = 1)
+    db_head <- readxl::read_xlsx(path = db, sheet = 1, n_max = 1)
+    if ('png' %in% names(db_head)) {
+      db_old <- readxl::read_xlsx(path = db, sheet = 1, col_types = c(
+        'text', #Taxon
+        'text', #Detector
+        'date', #T1
+        'numeric', #Score
+        'text', #Comment
+        'text', #File
+        'text', #png
+        'text', #Location
+        'numeric', #Lat
+        'numeric', #Lon
+        'date', #From
+        'date', #To
+        'text', #Duration
+        'text', #Device
+        'text', #Micro
+        'numeric', #min_conf
+        'numeric', #overlap
+        'numeric', #sensitivity
+        'text', #slist
+        'text', #Device ID
+        'numeric',#hz
+        'text', #gain
+        'numeric',#sleep
+        'numeric',#rec
+        'text'#filter
+      ))
+    } else {
+      db_old <- readxl::read_xlsx(path = db, sheet = 1, col_types = c(
+        'text', #Taxon
+        'text', #Detector
+        'date', #T1
+        'numeric', #Score
+        'text', #Comment
+        'text', #File
+        'text', #Location
+        'numeric', #Lat
+        'numeric', #Lon
+        'date', #From
+        'date', #To
+        'text', #Duration
+        'text', #Device
+        'text', #Micro
+        'numeric', #min_conf
+        'numeric', #overlap
+        'numeric', #sensitivity
+        'text', #slist
+        'text', #Device ID
+        'numeric',#hz
+        'text', #gain
+        'numeric',#sleep
+        'numeric',#rec
+        'text'#filter
+      ))
+    }
 
     if (any(duplicated(db_old))) {
       warning("Database contains duplicates!")
@@ -218,7 +280,6 @@ BirdNET_archive_am <- function(
   if (isTRUE(png)) {
     hLink.png <- df$png
     class(hLink.png) <- "hyperlink"
-
   }
 
   wb <- openxlsx::loadWorkbook(db)
