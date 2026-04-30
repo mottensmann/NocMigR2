@@ -114,6 +114,10 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
   ## export to xlsx file -------------------------------------------------------
   openxlsx::write.xlsx(x = out, file = file.path(path, "BirdNET.xlsx"), overwrite = T)
   cat("Created", file.path(path, "BirdNET.xlsx"), "\n")
+  ## check for slashes in file names and repair
+  check <- BirdNET_name_repair(path = path)
+  if (nrow(check) >= 1) {
+    warning("Repaired Taxon names containing slahses '/', replaced by '-'.\n", check)
+  }
   return(out)
-
 }
