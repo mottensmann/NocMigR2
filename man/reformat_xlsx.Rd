@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{reformat_xlsx}
 \alias{reformat_xlsx}
-\title{Format BirdNET.xlsx}
+\title{Format BirdNET.xlsx in a nice style}
 \usage{
 reformat_xlsx(path)
 }
@@ -10,5 +10,5 @@ reformat_xlsx(path)
 \item{path}{path}
 }
 \description{
-Format BirdNET.xlsx
+Format BirdNET.xlsx in a nice style
 }

@@ -751,10 +751,11 @@ get_timestamp <- function(x) {
 }
 
 
-#' Format BirdNET.xlsx
+#' Format BirdNET.xlsx in a nice style
 #'
 #' @param path path
 #' @import openxlsx
+#' @export
 #'
 reformat_xlsx <- function(path) {
 
