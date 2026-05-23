@@ -84,7 +84,7 @@ BirdNET_results2txt <- function(path = NULL, recursive = FALSE) {
 
 
   } else {
-    warning("Did not find any BirdNET.results.txt files!")
+    stop("Did not find any BirdNET.results.txt files!")
   }
   return(results)
 }
