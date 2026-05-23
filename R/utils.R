@@ -749,3 +749,48 @@ get_timestamp <- function(x) {
     min =  as.numeric(substr(basename(x), 12, 13)),
     sec = as.numeric(substr(basename(x), 14, 15)))
 }
+
+
+#' Format BirdNET.xlsx
+#'
+#' @param path path
+#' @import openxlsx
+#'
+reformat_xlsx <- function(path) {
+
+  # Load existing workbook
+  wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
+
+  # List of sheets to format
+  sheets <- c("Records", "Meta")
+
+  # Define border style once
+  border_style <- openxlsx::createStyle(border = "TopBottomLeftRight")
+
+  for (sh in sheets) {
+
+    # Get number of rows/cols in the sheet
+    data <- openxlsx::readWorkbook(file.path(path, "BirdNET.xlsx"), sheet = sh)
+    n_rows <- nrow(data) + 1   # +1 for header
+    n_cols <- ncol(data)
+
+    # (i) Auto column width
+    openxlsx::setColWidths(wb, sheet = sh, cols = 1:n_cols, widths = "auto")
+
+    # (ii) Add borders to all cells
+    openxlsx::addStyle(
+      wb, sheet = sh, style = border_style,
+      rows = 1:n_rows, cols = 1:n_cols,
+      gridExpand = TRUE, stack = TRUE
+    )
+
+    # (iii) Add filter to header row
+    openxlsx::addFilter(wb, sheet = sh, rows = 1, cols = 1:n_cols)
+
+    # (iv) Freeze first row
+    openxlsx::freezePane(wb, sheet = sh, firstActiveRow = 2)
+  }
+
+  # Save workbook
+  openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+}

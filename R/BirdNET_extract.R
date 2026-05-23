@@ -256,6 +256,7 @@ BirdNET_extract <- function(path = NULL,
                       colNames = FALSE,
                       startRow = 2)
   openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+  reformat_xlsx(path = path)
 
   # SNR does not work this way. check later again
 
