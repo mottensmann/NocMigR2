@@ -39,8 +39,6 @@ BirdNET_hide <- function(path, hidden.path) {
     silent <- file.rename(from = df$from, to = df$to)
   }
 }
-# path <- "E:/Audiomoth/NH_20231214_20231224"
-# hidden.path <- "E:/Audiomoth/Hide_from_BirdNET"
 
 
 #' Unhide wav files from BirdNET analyze.py

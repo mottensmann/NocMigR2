@@ -10,6 +10,8 @@
 #'
 BattyBirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = TRUE) {
 
+  .Deprecated(msg = 'This function is currently not maintained!')
+
   if (!dir.exists(path)) stop("provide valid path")
 
   ## 1.) Summarise and tidyup BattyBirdNET results-----------------------------------

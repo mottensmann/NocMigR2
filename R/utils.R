@@ -35,7 +35,7 @@ BirdNET_table <- function(path = NULL, recursive = FALSE) {
   if (!dir.exists(path)) stop("provide valid path")
 
   ## binding for global variables to please checks ...
-  species <- hour <- . <- NA
+  label <- time <- species <- hour <- . <- Taxon <- NA
 
   # 0.) Check 'BirdNET.results.txt'
   BirdNET.results.files <- list.files(path = path,

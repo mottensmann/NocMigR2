@@ -8,8 +8,10 @@
 #'
 chirpity2audacity <- function(path) {
 
+  .Deprecated(msg = 'This function is currently not further maintained!')
+
   ## no visible binding for global variable ------------------
- File <- Time <- Start..s. <- NULL
+  File <- Time <- Start..s. <- NULL
 
   ## read csv file ...
   chirpity <- utils::read.csv(path) %>%

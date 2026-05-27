@@ -6,3 +6,4 @@ BIO-NB-005
 Datenbank
 ^\.positai$
 ^\.claude$
+internal/
