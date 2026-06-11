@@ -2,7 +2,7 @@
 % Please edit documentation in R/AudioMothSetup.R
 \name{AudioMoth_days}
 \alias{AudioMoth_days}
-\title{Compute AudioMoth recording days}
+\title{Compute Audio Moth recording days}
 \usage{
 AudioMoth_days(mAH.d = 90, mAH = 2600, MB = 128 * 1000, MB.d = 3456)
 }

@@ -13,6 +13,8 @@ BirdNET_name_repair <- function(path) {
   wb <- openxlsx::loadWorkbook(xlsx_path)
   df <- readxl::read_xlsx(xlsx_path)
 
+  Taxon <- NA
+
   check <- dplyr::filter(df, grepl("/", Taxon))
 
   if (nrow(check) > 1) {

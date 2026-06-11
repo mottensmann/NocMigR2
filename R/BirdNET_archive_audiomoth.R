@@ -19,7 +19,7 @@ BirdNET_archive_am <- function(
     png = TRUE) {
 
   ## binding for global variables to please checks ...
-  Verification <- mutate <- Comment <- T1 <- Taxon <- Hour <- n <- . <- child <- file.new <- output <- NA
+  Verification <- mutate <- Comment <- T1 <- Taxon <- Hour <- n <- . <- child <- file.new <- output <- Min_conf <- Overlap <- Overlap <- Hz <- Sleep <- Rec <- Sensitivity <- NA
 
   if (!dir.exists(path2archive)) stop("provide valid path2archive")
   path2archive <- tools::file_path_as_absolute(path2archive)

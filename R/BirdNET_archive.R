@@ -26,8 +26,7 @@ BirdNET_archive <- function(
   if (!dir.exists(path2archive)) stop("provide valid path2archive")
   path2archive <- tools::file_path_as_absolute(path2archive)
 
-  ## (1) Load from Excel ...
-  ## ---------------------------------------------------------------------------
+  ## Read xlsx data base -------------------------------------
   if (!file.exists(BirdNET_results)) stop(BirdNET_results, "not found")
   data_df <- readxl::read_xlsx(BirdNET_results)
   data_meta <- readxl::read_xlsx(BirdNET_results, sheet = "Meta")
@@ -46,8 +45,7 @@ BirdNET_archive <- function(
     }
   }
 
-  ## keep just verified detections
-  ## -----------------------------------------------------
+  ## keep just verified detections ---------------------------
   df <- dplyr::filter(data_df, Verification %in% c("T", "TRUE", "true postive"))
   if (isTRUE(NocMig)) {
     ## ignore what is not considered NocMig or NFC --> Local
@@ -57,7 +55,6 @@ BirdNET_archive <- function(
   }
   if (nrow(df) > 0) {
     ## check for multiple events assigned to same individual
-    ## -----------------------------------------------------
     df <- df %>% dplyr::mutate(check = dplyr::case_when(
       !is.na(ID) ~ paste0(Taxon, ID),
       TRUE ~ NA
@@ -70,13 +67,11 @@ BirdNET_archive <- function(
 
     ## keep fist detection if multiple exist
     ## check ID ...
-    ## -----------------------------------------------------
     dupls <- which(duplicated(df$check))
 
     if (length(dupls) >= 1) df <- df[-dupls,]
 
     ## count events: Total and hourly sum
-    ## ---------------------------------------------------------------------------
     out <- df %>%
       dplyr::group_by(Taxon, Hour) %>%
       dplyr::summarise(n = dplyr::n())
@@ -88,8 +83,7 @@ BirdNET_archive <- function(
         dplyr::mutate(part2.sum = sum(n[!Hour %in% 17:23])) %>%
         dplyr::mutate(Hour = paste0("0", Hour)) %>%
         dplyr::mutate(Hour = stringr::str_sub(Hour, nchar(Hour) - 1, nchar(Hour)))
-      ## compose string for ornitho
-      ## -------------------------------------------------------------------------
+      ## compose string for ornitho --------------------------
       part1.string = paste0(x$Hour[x$Hour %in% as.character(17:23)], ":",
                             x$n[x$Hour %in% as.character(17:23)], collapse = ",")
       part2.string = paste0(x$Hour[!x$Hour %in% as.character(17:23)], ":",
@@ -117,8 +111,7 @@ BirdNET_archive <- function(
     df.backup <- df
   }
 
-  ## Transfer files to archive
-  ## ---------------------------------------------------------------------------
+  ## Transfer files to archive -------------------------------
   folder.df <- data.frame(
     file = data_df[["File"]],
     parent = stringr::str_split(data_df[["File"]][1], "extracted")[[1]][[1]],
@@ -128,7 +121,6 @@ BirdNET_archive <- function(
     file.new = NA)
 
   ## true positives
-  ## ---------------------------------------------------------------------------
   folder.df.true <-
     dplyr::filter(folder.df, file %in% df.backup[["File"]]) %>%
     dplyr::mutate(to_path = file.path(file.path(path2archive, "True positives"), child))
@@ -136,11 +128,9 @@ BirdNET_archive <- function(
   taxa <- unique(data_df$Taxon[data_df$Verification == "T"])
 
   ## Attempt to create main dir
-  ## --------------------------
   dir.create(file.path(path2archive, "True positives"), showWarnings = FALSE)
 
   ## Attempt to create sub dirs
-  ## --------------------------
   for (taxon in taxa) {
     dir.create(file.path(path2archive, "True positives", taxon), showWarnings = FALSE)
   }
@@ -158,7 +148,6 @@ BirdNET_archive <- function(
   folder.df$file.new[which(folder.df$file %in% folder.df.true$file)] <- folder.df.true$to_path
 
   ## false positives
-  ## ---------------------------------------------------------------------------
   if (isTRUE(keep.false)) {
     folder.df.false <-
       dplyr::filter(folder.df, !file %in% df[["File"]]) %>%
@@ -166,11 +155,9 @@ BirdNET_archive <- function(
 
     taxa <- unique(data_df$Taxon[data_df$Verification == "F"])
     ## Attempt to create main dir
-    ## --------------------------
     dir.create(file.path(path2archive, "False positives"), showWarnings = FALSE)
 
     ## Attempt to create sub dirs
-    ## --------------------------
     for (taxon in taxa) {
       dir.create(file.path(path2archive, "False positives", taxon), showWarnings = FALSE)
     }
@@ -191,8 +178,6 @@ BirdNET_archive <- function(
 
 
   ## Return data frame and export to xlsx
-  ## ---------------------------------------------------------------------------
-
   if (isTRUE(NocMig)) {
     output <- cbind(data.frame(Date = as.character(as.Date(data_meta$From))),
                     out,

@@ -20,6 +20,8 @@ chirpity2BirdNET <- function(
     output = file.path(path, "BirdNET_Chirpity.xlsx"),
     ignore_terms = c('call', 'flight call', 'song')) {
 
+  .Deprecated(msg = 'This function is currently not further maintained!')
+
   ## no visible binding for global variable ------------------
   Common.name <- Model <- File <- Start..s. <- Confidence <-
     . <- png <- Taxon <- NULL

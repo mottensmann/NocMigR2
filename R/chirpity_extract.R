@@ -18,6 +18,8 @@ chirpity_extract <- function(path = NULL,
                              hyperlink = FALSE,
                              sec = 1) {
 
+  .Deprecated(msg = 'This function is currently not further maintained!')
+
   ## no visible binding for global variable ------------------
   Detector <- . <- NULL
 
