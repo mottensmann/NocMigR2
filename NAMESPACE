@@ -2,9 +2,6 @@
 
 export(AudioMothSetup)
 export(AudioMoth_days)
-export(BattyBirdNET)
-export(BattyBirdNET_extract)
-export(BattyBirdNET_tidyup)
 export(BirdNET)
 export(BirdNET_archive)
 export(BirdNET_archive_am)
