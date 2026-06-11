@@ -4,11 +4,7 @@
 \alias{read.audacity}
 \title{Replacement for \code{\link[seewave]{read.audacity}} to avoid problems with certain labels containing apostrophes etc.}
 \usage{
-read.audacity(
-  file,
-  delim = "\\t",
-  col_names = c("start", "end", "label", "score")
-)
+read.audacity(file, delim = "\\t", col_names = c("t1", "t2", "label", "Score"))
 }
 \arguments{
 \item{file}{A .txt file}

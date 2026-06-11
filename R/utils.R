@@ -808,7 +808,7 @@ reformat_xlsx <- function(path) {
 #' @importFrom readr read_delim
 #' @export
 #'
-read.audacity <- function(file, delim = '\t', col_names = c("start", "end", "label", "score")) {
+read.audacity <- function(file, delim = '\t', col_names = c("t1", "t2", "label", "Score")) {
   df <- readr::read_delim(file = file,
                           delim = delim,
                           col_names = col_names,
