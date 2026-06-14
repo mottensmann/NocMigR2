@@ -4,12 +4,18 @@
 \alias{BirdNET_table}
 \title{Data frame of BirdNET detections}
 \usage{
-BirdNET_table(path = NULL, recursive = FALSE)
+BirdNET_table(
+  path = NULL,
+  recursive = FALSE,
+  model = c("BirdNET v2.4", "Perch v2")
+)
 }
 \arguments{
 \item{path}{path}
 
 \item{recursive}{logical. Should the listing recurse into directories?}
+
+\item{model}{One of \code{c('BirdNET v2.4', 'Perch v2')}}
 }
 \description{
 Data frame of BirdNET detections

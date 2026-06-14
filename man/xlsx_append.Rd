@@ -4,12 +4,14 @@
 \alias{xlsx_append}
 \title{Append columns to existing xslx database}
 \usage{
-xlsx_append(path, data)
+xlsx_append(path, data, model = c("BirdNET v2.4", "Perch v2"))
 }
 \arguments{
 \item{path}{file}
 
 \item{data}{data frame}
+
+\item{model}{One of \code{c('BirdNET v2.4', 'Perch v2')}}
 }
 \description{
 Append columns to existing xslx database

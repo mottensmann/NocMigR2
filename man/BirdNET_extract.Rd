@@ -12,7 +12,8 @@ BirdNET_extract(
   sec = 1,
   output = NULL,
   spectro = FALSE,
-  hyperlink = F
+  hyperlink = F,
+  model = c("BirdNET v2.4", "Perch v2")
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ BirdNET_extract(
 \item{spectro}{logical. export spectro using \code{\link[bioacoustics]{spectro}} defaults to FALSE}
 
 \item{hyperlink}{optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.}
+
+\item{model}{One of \code{c('BirdNET v2.4', 'Perch v2')}}
 }
 \description{
 Extract events detected by BirdNET-Analyzer from original recording files. As labels species names and a time-stamp are used. As guidance for manual inspection of results, a maximum of 10 samples per taxon are randomly selected for validation. Selected segments are highlighted using the keyword 'validate' in the Quality column of the resulting `BirdNET.xlsx` file. Furthermore, the Comments column is populated with a consecutive numbering (1:N) per taxon.

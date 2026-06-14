@@ -4,12 +4,14 @@
 \alias{BirdNET_tidyup}
 \title{Performs a cleanup of sound archives}
 \usage{
-BirdNET_tidyup(path, recursive)
+BirdNET_tidyup(path, recursive, model = c("BirdNET v2.4", "Perch v2"))
 }
 \arguments{
 \item{path}{path to text files}
 
 \item{recursive}{logical. Should the listing recurse into directories?}
+
+\item{model}{One of \code{c('BirdNET v2.4', 'Perch v2')}}
 }
 \description{
 Performs a cleanup of sound archives

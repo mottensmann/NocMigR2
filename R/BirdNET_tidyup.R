@@ -7,10 +7,21 @@
 #' @inheritParams BirdNET_results2txt
 #' @export
 #'
-BirdNET_tidyup <- function(path, recursive) {
+BirdNET_tidyup <- function(path, recursive, model = c('BirdNET v2.4', 'Perch v2')) {
+
+
+  model <- match.arg(model)
+
+  # Load existing workbook
+  if (model == 'BirdNET v2.4') {
+    my_pattern    <- 'BirdNET.results.txt'
+  } else if (model == 'Perch v2') {
+    my_pattern <- 'Perch.results.txt'
+  }
+
   ## find results files
   BirdNET.results.files <- list.files(path = path,
-                                      pattern = "BirdNET.results.txt",
+                                      pattern = my_pattern,
                                       full.names = T,
                                       recursive = recursive)
   ## identify empty files ...

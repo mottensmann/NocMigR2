@@ -4,7 +4,13 @@
 \alias{BirdNET}
 \title{Processing data analysed using BirdNET-Analyzer}
 \usage{
-BirdNET(path = NULL, recursive = FALSE, meta = NULL, am_config = FALSE)
+BirdNET(
+  path = NULL,
+  recursive = FALSE,
+  meta = NULL,
+  am_config = FALSE,
+  model = c("BirdNET v2.4", "Perch v2")
+)
 }
 \arguments{
 \item{path}{path to text files}
@@ -14,6 +20,8 @@ BirdNET(path = NULL, recursive = FALSE, meta = NULL, am_config = FALSE)
 \item{meta}{optional. data.frame with recording metadata}
 
 \item{am_config}{logical. attempt to read Audiomoth configuration file if TRUE}
+
+\item{model}{One of \code{c('BirdNET v2.4', 'Perch v2')}}
 }
 \description{
 Processing data analysed using BirdNET-Analyzer

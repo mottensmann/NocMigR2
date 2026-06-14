@@ -3,14 +3,23 @@
 #' @inheritParams BirdNET_results2txt
 #' @param meta optional. data.frame with recording metadata
 #' @param am_config logical. attempt to read Audiomoth configuration file if TRUE
+#' @param model One of \code{c('BirdNET v2.4', 'Perch v2')}
 #' @examples
 #' \dontrun{BirdNET(path = "Path to files")}
 #' @import magrittr
 #' @export
 #'
-BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FALSE) {
+BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FALSE, model = c('BirdNET v2.4', 'Perch v2')) {
 
   if (!dir.exists(path)) stop("provide valid path")
+  model <- match.arg(model)
+
+  # Load existing workbook
+  if (model == 'BirdNET v2.4') {
+    xlsx <- 'BirdNET.xlsx'
+  } else if (model == 'Perch v2') {
+    xlsx <- 'Perch.xlsx'
+  }
 
   ## 1.) Summarise and tidyup BirdNET results-----------------------------------
   ## list files and handle case sensitivity
@@ -46,17 +55,19 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
   if (nchar(as.character(to)) == 10) to <- to + 1
 
   ## Estimat total recording duration-------------------------------------------
-  cat("Calculate total duration of", length(wavs), "recordings:\n")
+  message("Calculate total duration of ", length(wavs), " recordings:\n")
   duration <- total_duration(path = path, recursive = recursive)[["duration"]]
 
   ## 2.) Tweak labels-----------------------------------------------------------
-  BirdNET_results <- BirdNET_results2txt(path = path, recursive = recursive)
-  BirdNET_table <- BirdNET_table(path = path, recursive = recursive)
+  BirdNET_results <- BirdNET_results2txt(path = path, recursive = recursive, model = model)
+  BirdNET_table <- BirdNET_table(path = path, recursive = recursive, model = model)
 
   ## 3.) list records-----------------------------------------------------------
   Records <- data.frame(
     Taxon =  BirdNET_results$label2,
-    Detector = 'BirdNET',
+    Detector = dplyr::case_when(model == 'BirdNET v2.4' ~ 'BirdNET',
+                                model == 'Perch v2' ~ 'Perch',
+                                TRUE ~ model),
     ID = NA,
     #Date = lubridate::date(BirdNET_results$Start +  BirdNET_results$t1),
     T1 = lubridate::as_datetime(BirdNET_results$Start +  BirdNET_results$t1),
@@ -112,12 +123,13 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
   }
 
   ## export to xlsx file -------------------------------------------------------
-  openxlsx::write.xlsx(x = out, file = file.path(path, "BirdNET.xlsx"), overwrite = T)
-  reformat_xlsx(path = path)
+    openxlsx::write.xlsx(x = out, file = file.path(path, xlsx), overwrite = T)
 
-  cat("Created", file.path(path, "BirdNET.xlsx"), "\n")
+  reformat_xlsx(path = path, model = model)
+
+  message("Created ", file.path(path, xlsx), "\n")
   ## check for slashes in file names and repair
-  check <- BirdNET_name_repair(path = path)
+  check <- BirdNET_name_repair(path = path, model = model)
   if (nrow(check) >= 1) {
     warning("Repaired Taxon names containing slahses '/', replaced by '-'.\n", check)
   }

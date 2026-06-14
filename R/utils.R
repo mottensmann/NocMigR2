@@ -31,15 +31,24 @@ audiomothConfig <- function(filename) {
 #' @inheritParams BirdNET_results2txt
 #' @keywords internal
 #'
-BirdNET_table <- function(path = NULL, recursive = FALSE) {
+BirdNET_table <- function(path = NULL, recursive = FALSE, model = c('BirdNET v2.4', 'Perch v2')) {
   if (!dir.exists(path)) stop("provide valid path")
 
   ## binding for global variables to please checks ...
   label <- time <- species <- hour <- . <- Taxon <- NA
 
+  model <- match.arg(model)
+
+  # Load existing workbook
+  if (model == 'BirdNET v2.4') {
+    my_pattern <- "BirdNET.labels.txt"
+  } else if (model == 'Perch v2') {
+    my_pattern <- 'Perch.labels.txt'
+  }
+
   # 0.) Check 'BirdNET.results.txt'
   BirdNET.results.files <- list.files(path = path,
-                                      pattern = "BirdNET.labels.txt",
+                                      pattern = my_pattern,
                                       full.names = T,
                                       recursive = recursive)
 
@@ -47,7 +56,7 @@ BirdNET_table <- function(path = NULL, recursive = FALSE) {
   if (length(BirdNET.results.files) >= 1) {
     # read audacity marks
     if (interactive()) {
-      cat("Read BirdNET results:\n")
+      message("Read ", model,  " results:\n")
       df <- pbapply::pblapply(BirdNET.results.files,
                               readr::read_delim,
                               delim = "\t",
@@ -606,12 +615,22 @@ BirdNET_extract2 <- function(path = NULL,
 #' Append columns to existing xslx database
 #' @param path file
 #' @param data data frame
+#' @inheritParams BirdNET
 #' @export
 #'
-xlsx_append <- function(path, data) {
+xlsx_append <- function(path, data, model = c('BirdNET v2.4', 'Perch v2')) {
+
+  model <- match.arg(model)
+
+  # Load existing workbook
+  if (model == 'BirdNET v2.4') {
+    xlsx <- 'BirdNET.xlsx'
+  } else if (model == 'Perch v2') {
+    xlsx <- 'Perch.xlsx'
+  }
 
   ## load xlsx file
-  xlsx <- readxl::read_xlsx(file.path(path, "BirdNET.xlsx"))
+  xlsx <- readxl::read_xlsx(file.path(path, xlsx))
 
   ## match rows based on basename of audio files
   xlsx[["File"]] <- basename( xlsx[["File"]])
@@ -620,7 +639,7 @@ xlsx_append <- function(path, data) {
   df <- dplyr::left_join(xlsx, data, by = c("File" = "file"))
 
   ## open workbook as it is ...
-  wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
+  wb <- openxlsx::loadWorkbook(file.path(path, xlsx))
 
   ## insert in wb ...
   openxlsx::writeData(
@@ -630,7 +649,7 @@ xlsx_append <- function(path, data) {
     startCol = ncol(xlsx) + 1,
     colNames = TRUE,
     startRow = 1)
-  openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+  openxlsx::saveWorkbook(wb, file.path(path, xlsx), overwrite = TRUE)
   return(df)
 }
 
@@ -754,13 +773,23 @@ get_timestamp <- function(x) {
 #' Format BirdNET.xlsx in a nice style
 #'
 #' @param path path
+#' @inheritParams BirdNET
 #' @import openxlsx
 #' @export
 #'
-reformat_xlsx <- function(path) {
+reformat_xlsx <- function(path, model = c('BirdNET v2.4', 'Perch v2')) {
+
+  if (!dir.exists(path)) stop("provide valid path")
+  model <- match.arg(model)
 
   # Load existing workbook
-  wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET.xlsx"))
+  if (model == 'BirdNET v2.4') {
+    xlsx <- 'BirdNET.xlsx'
+  } else if (model == 'Perch v2') {
+    xlsx <- 'Perch.xlsx'
+  }
+
+  wb <- openxlsx::loadWorkbook(file.path(path, xlsx))
 
   # List of sheets to format
   sheets <- c("Records", "Meta")
@@ -771,7 +800,7 @@ reformat_xlsx <- function(path) {
   for (sh in sheets) {
 
     # Get number of rows/cols in the sheet
-    data <- openxlsx::readWorkbook(file.path(path, "BirdNET.xlsx"), sheet = sh)
+    data <- openxlsx::readWorkbook(file.path(path, xlsx), sheet = sh)
     n_rows <- nrow(data) + 1   # +1 for header
     n_cols <- ncol(data)
 
@@ -793,7 +822,7 @@ reformat_xlsx <- function(path) {
   }
 
   # Save workbook
-  openxlsx::saveWorkbook(wb, file.path(path, "BirdNET.xlsx"), overwrite = TRUE)
+  openxlsx::saveWorkbook(wb, file.path(path, xlsx), overwrite = TRUE)
 }
 
 #' Replacement for \code{\link[seewave]{read.audacity}} to avoid problems with certain labels containing apostrophes etc.

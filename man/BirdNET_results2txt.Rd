@@ -4,12 +4,18 @@
 \alias{BirdNET_results2txt}
 \title{Modify 'BirdNET.results.txt' created by BirdNET-Analyzer}
 \usage{
-BirdNET_results2txt(path = NULL, recursive = FALSE)
+BirdNET_results2txt(
+  path = NULL,
+  recursive = FALSE,
+  model = c("BirdNET v2.4", "Perch v2")
+)
 }
 \arguments{
 \item{path}{path to text files}
 
 \item{recursive}{logical. Should the listing recurse into directories?}
+
+\item{model}{One of \code{c('BirdNET v2.4', 'Perch v2')}}
 }
 \value{
 data frame

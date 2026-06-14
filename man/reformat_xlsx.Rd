@@ -4,10 +4,12 @@
 \alias{reformat_xlsx}
 \title{Format BirdNET.xlsx in a nice style}
 \usage{
-reformat_xlsx(path)
+reformat_xlsx(path, model = c("BirdNET v2.4", "Perch v2"))
 }
 \arguments{
 \item{path}{path}
+
+\item{model}{One of \code{c('BirdNET v2.4', 'Perch v2')}}
 }
 \description{
 Format BirdNET.xlsx in a nice style

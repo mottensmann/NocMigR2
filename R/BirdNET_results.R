@@ -2,6 +2,7 @@
 #'
 #' @param path path to text files
 #' @param recursive logical. Should the listing recurse into directories?
+#' @inheritParams BirdNET
 #' @description
 #' Tweaks audacity labels by composing a string consisting of species name, recording date and time and detection score (e.g. "Blackbird 2023-08-15 [0.89]").
 #'
@@ -12,13 +13,23 @@
 #'
 #' @keywords internal
 #'
-BirdNET_results2txt <- function(path = NULL, recursive = FALSE) {
+BirdNET_results2txt <- function(path = NULL, recursive = FALSE, model = c('BirdNET v2.4', 'Perch v2')) {
 
   if (!dir.exists(path)) stop("provide valid path")
+  model <- match.arg(model)
+
+  # Load existing workbook
+  if (model == 'BirdNET v2.4') {
+    my_pattern    <- 'BirdNET.results.txt'
+    my_replacement <- "BirdNET.labels.txt"
+  } else if (model == 'Perch v2') {
+    my_pattern <- 'Perch.results.txt'
+    my_replacement <- 'Perch.labels.txt'
+  }
 
   ## Check 'BirdNET.results.txt'
   BirdNET.results.files <- list.files(path = path,
-                                      pattern = "BirdNET.results.txt",
+                                      pattern = my_pattern,
                                       full.names = T,
                                       recursive = recursive)
 
@@ -76,14 +87,14 @@ BirdNET_results2txt <- function(path = NULL, recursive = FALSE) {
           t1 = BirdNET.results.df[["t1"]],
           t2 = BirdNET.results.df[["t2"]]),
         filename = stringr::str_replace(string = BirdNET.results.df$file[1],
-                                        pattern = "BirdNET.results.txt" ,
-                                        replacement = "BirdNET.labels.txt"))
+                                        pattern = my_pattern ,
+                                        replacement = my_replacement))
       results <- rbind(results, BirdNET.results.df)
     }
 
 
   } else {
-    stop("Did not find any BirdNET.results.txt files!")
+    stop("Did not find any ", my_pattern,  " files!")
   }
   return(results)
 }

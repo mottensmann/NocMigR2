@@ -4,10 +4,12 @@
 \alias{BirdNET_name_repair}
 \title{Cleanup taxon names to avoid problems when specifying path}
 \usage{
-BirdNET_name_repair(path)
+BirdNET_name_repair(path, model = c("BirdNET v2.4", "Perch v2"))
 }
 \arguments{
 \item{path}{path}
+
+\item{model}{One of \code{c('BirdNET v2.4', 'Perch v2')}}
 }
 \description{
 Fix the slash '/' in the taxon name and replace by a minus '-'-
