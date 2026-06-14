@@ -38,11 +38,11 @@ BirdNET_extract <- function(path = NULL,
 
   # Load existing workbook
   if (model ==        'BirdNET v2.4') {
-    xlsx <-           'BirdNET.xlsx'
+    my_xlsx <-        'BirdNET.xlsx'
     my_pattern    <-  'BirdNET.results.txt'
 
   } else if (model == 'Perch v2') {
-    xlsx <-           'Perch.xlsx'
+    my_xlsx <-        'Perch.xlsx'
     my_pattern <-     'Perch.results.txt'
   }
 
@@ -50,8 +50,8 @@ BirdNET_extract <- function(path = NULL,
   path <- tools::file_path_as_absolute(path)
 
   ## 1.) Check for BirdNET.xlsx and load if present ----------------------------
-  if (!file.exists(file.path(path, xlsx))) stop(xlsx, " not found")
-  xlsx <- readxl::read_xlsx(file.path(path, xlsx))
+  if (!file.exists(file.path(path, my_xlsx))) stop(my_xlsx, " not found")
+  xlsx <- readxl::read_xlsx(file.path(path, my_xlsx))
 
   ## check if BirdNET.xlsx was already formatted with BirdNET_extract
   ## Attempt by all files unique and containing extracted in file name
@@ -182,7 +182,7 @@ BirdNET_extract <- function(path = NULL,
   if (isTRUE(hyperlink) & isFALSE(spectro)) {
 
     ## open workbook as it is ...
-    wb <- openxlsx::loadWorkbook(file.path(path, xlsx))
+    wb <- openxlsx::loadWorkbook(file.path(path, my_xlsx))
 
     ## create hyperlink ... check order?
     wav.link <- out; class(wav.link) <- "hyperlink"
@@ -194,11 +194,11 @@ BirdNET_extract <- function(path = NULL,
                         startCol = 12,
                         colNames = FALSE,
                         startRow = 2)
-    openxlsx::saveWorkbook(wb, file.path(path, xlsx), overwrite = TRUE)
+    openxlsx::saveWorkbook(wb, file.path(path, my_xlsx), overwrite = TRUE)
   } else if (isTRUE(hyperlink) & isTRUE(spectro))  {
 
     ## open workbook as it is ...
-    wb <- openxlsx::loadWorkbook(file.path(path, xlsx))
+    wb <- openxlsx::loadWorkbook(file.path(path, my_xlsx))
 
     ## create hyperlink ... check order?
     wav.link <- out; class(wav.link) <- "hyperlink"
@@ -231,7 +231,7 @@ BirdNET_extract <- function(path = NULL,
                         colNames = TRUE,
                         startRow = 1)
 
-    openxlsx::saveWorkbook(wb, file.path(path, xlsx), overwrite = TRUE)
+    openxlsx::saveWorkbook(wb, file.path(path, my_xlsx), overwrite = TRUE)
   }
 
   ## Add information for validation of subsets
@@ -252,7 +252,7 @@ BirdNET_extract <- function(path = NULL,
   }
 
   ## open workbook as it is ...
-  wb <- openxlsx::loadWorkbook(file.path(path, xlsx))
+  wb <- openxlsx::loadWorkbook(file.path(path, my_xlsx))
 
   ## insert in wb ...
   openxlsx::writeData(wb = wb,
@@ -268,7 +268,7 @@ BirdNET_extract <- function(path = NULL,
                       startCol = 9,
                       colNames = FALSE,
                       startRow = 2)
-  openxlsx::saveWorkbook(wb, file.path(path, xlsx), overwrite = TRUE)
+  openxlsx::saveWorkbook(wb, file.path(path, my_xlsx), overwrite = TRUE)
   reformat_xlsx(path = path, model = model)
 
   # SNR does not work this way. check later again
