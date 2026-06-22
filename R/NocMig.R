@@ -25,7 +25,6 @@ NocMig_meta <- function(
     date = Sys.Date() - 1) {
 
   ## compose URL to query api.brightsky.dev
-  ## ---------------------------------------------------------------------------
   URL1 <- paste0(
     'https://api.brightsky.dev/weather?',
     'lat=', lat, '&lon=', lon, '&date=',
@@ -37,7 +36,6 @@ NocMig_meta <- function(
     format(date + 1, "%Y-%m-%d"))
 
   ## get data and convert to data frame
-  ## ---------------------------------------------------------------------------
   df1 <- try(as.data.frame(jsonlite::fromJSON(URL1)$weather[,c(1:15,17)]))
   df2 <- try(as.data.frame(jsonlite::fromJSON(URL2)$weather[,c(1:15,17)]))
 
@@ -51,11 +49,9 @@ NocMig_meta <- function(
   }
 
   ## merge data frames
-  ## ---------------------------------------------------------------------------
   df <- unique.data.frame(rbind(df1, df2))
 
   ## translate timestamp to datime
-  ## ---------------------------------------------------------------------------
   df$date <- lubridate::make_datetime(
     year = as.numeric(substr(df$timestamp, 1, 4)),
     month = as.numeric(substr(df$timestamp, 6, 7)),
@@ -66,7 +62,6 @@ NocMig_meta <- function(
     tz = "CET")
 
   ## select time between dusk and dawn
-  ## ---------------------------------------------------------------------------
   dusk_dawn <- dusk2dawn(date, lat, lon)
   df_dawn_midnight <- dplyr::filter(df, date >= lubridate::round_date(dusk_dawn$dusk, "h"),
                                     date < lubridate::round_date(dusk_dawn$dusk, "d"))
@@ -74,13 +69,11 @@ NocMig_meta <- function(
                                     date < lubridate::round_date(dusk_dawn$dawn, "h"))
 
   ## prepare output
-  ## ---------------------------------------------------------------------------
   getmode <- function(v) {
     uniqv <- unique(v)
     uniqv[which.max(tabulate(match(v, uniqv)))]}
 
   ##  Convert wind directions
-  ## ---------------------------------------------------------------------------
   rose_breaks <- c(0, 360/32, (1/32 + (1:15 / 16)) * 360, 360)
   rose_labs <- c(
     "N", "NNE", "NE", "ENE",
@@ -89,11 +82,7 @@ NocMig_meta <- function(
     "W", "WNW", "NW", "NNW",
     "N")
 
-  # Fri Apr 28 21:24:51 2023 ------------------------------
-  # Remove var icon, apparently not embedded in data frame anymore
-  #
-
-  out1 <- data.frame(
+    out1 <- data.frame(
     cond = dplyr::case_when(
       getmode(df_dawn_midnight$condition) == "rain" ~ "regnerisch",
       getmode(df_dawn_midnight$condition) == "dry" ~ "trocken",
@@ -124,7 +113,6 @@ NocMig_meta <- function(
     wind_speed = round(mean(df_midnight_dusk$wind_speed, na.rm = T),0))
 
   ## output strings
-  ## -----------------------------------------------------------------------------
   part1 <- paste0("Teilliste 1: ",
                   dusk_dawn$string, ", ",
                   #out1$icon, "-",
@@ -149,3 +137,103 @@ NocMig_meta <- function(
   cat(part2)
   df <- (data.frame(part1 = part1, part2 = part2))
 }
+#' Process NocMig session for downstream analysis
+#'
+#' @param parent.folder path
+#' @param child.folder optional. defaults to an empty string \code{''}
+#' @param rename logical. defaults to \code{TRUE}
+#' @param segment_length optional numeric value. If specified, function \code{\link{split_wave}} is used to to segmenti long audio files in shorter segments. defaults to \code{NULL}
+#' @inheritParams rename_recording
+#' @inheritParams NocMig_meta
+#' @export
+#'
+NocMig_process <- function(
+    parent.folder = "E:/NocMig",
+    child.folder = "",
+    format = c("wav", "mp3"),
+    rename = TRUE,
+    time_reference = c("first", "each"),
+    ctime = TRUE,
+    lat = 52.032090,
+    lon = 8.516775,
+    segment_length = NULL) {
+
+  format <- match.arg(format)
+  time_reference <- match.arg(time_reference)
+
+  if (!dir.exists(file.path(parent.folder, child.folder))) {
+    cat(file.path(parent.folder, child.folder), "not found!\n")
+  }
+
+  ## 02: Rename Recording (not touching files with proper name!)
+  if (isTRUE(rename)) {
+    cat("Rename files in", file.path(parent.folder, child.folder), "\n")
+    output <- rename_recording(
+      path = file.path(parent.folder, child.folder),
+      ctime = ctime,
+      time_reference = time_reference,
+      format = format)
+    output.time <- RecreateDateTime(output$new.name)
+  } else {
+    output <- list.files(path = file.path(parent.folder, child.folder),
+                         pattern = paste0(".", format),
+                         full.names = F,
+                         ignore.case = T)
+    output.time <- RecreateDateTime(output)
+  }
+
+  ## 03: Obtain NocMig header
+  cat("Write NocMig head to file", file.path(parent.folder, child.folder, "NocMig_meta.txt"), "\n")
+  sink(file.path(parent.folder, child.folder, "NocMig_meta.txt"))
+  NocMig_meta(lat = lat, lon = lon, date = lubridate::as_date(min(output.time)))
+  sink()
+
+  if (!is.null(segment_length) & methods::is(segment_length, "numeric")) {
+    if (format == "mp3") {
+      stop("Segementing audio files required wave files - mp3 is not supported")
+    } else {
+      audio.files <- list.files(file.path(parent.folder, child.folder),
+                                pattern = format, ignore.case = TRUE)
+      lapply(audio.files, split_wave,
+             path = file.path(parent.folder, child.folder),
+             segment = segment_length, discard_input = T)
+    }
+
+  }
+}
+
+#' Compose dusk-to-dawn string based on date and location
+#'
+#' @description
+#' Calling \code{\link[suncalc]{getSunlightTimes}} to retrieve times of dusk and dawn for a coordinate pair
+#'
+#' @param date Date. Default \code{\link[base]{Sys.Date}}
+#' @param lat latitude in decimal degrees
+#' @param lon longitude in decimal degrees
+#' @param tz timezone. Default CEt
+#' @examples
+#' ## usage
+#' dusk2dawn(date = Sys.Date(), lat = 52, lon = 8)
+#' @export
+#'
+dusk2dawn <- function(date = Sys.Date(), lat = 52.032, lon = 8.517, tz = "CET") {
+  d1 <- suppressWarnings(suncalc::getSunlightTimes(
+    date = date, lat = lat, lon = lon, tz = tz, keep = "dusk"))
+  d2 <- suppressWarnings(suncalc::getSunlightTimes(
+    date = date + 1, lat = lat, lon = lon, tz = tz, keep = "dawn"))
+  return(data.frame(
+    dusk = d1$dusk,
+    dawn = d2$dawn,
+    string = paste0(
+      lubridate::day(d1$date), ".", lubridate::month(d1$date), "-",
+      lubridate::day(d2$date), ".", lubridate::month(d2$date), ".", lubridate::year(d2$date), ", ",
+      substr(as.character(d1$dusk), 12, 16), "-", substr(as.character(d2$dawn), 12, 16)
+    )
+  ))
+
+}
+
+
+
+
+

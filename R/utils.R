@@ -1,112 +1,3 @@
-#' Read AudioMoth configuration file
-#'
-#' Reads and parses an AudioMoth configuration file.
-#'
-#' @param filename Path to the configuration file to read
-#' @return A data frame of matching annotations
-#' @export
-#' @source https://github.com/edwbaker/SonicScrewdriveR/blob/master/R/audiomoth.R
-#' @importFrom utils read.csv
-#' @examples
-#' \dontrun{
-#' audiomothConfig("./CONFIG.TXT")
-#' }
-#' @export
-#'
-audiomothConfig <- function(filename) {
-  f <- readLines(filename)
-  c <- read.csv(textConnection(sub(":", "|", f)), header = FALSE, sep = "|")
-  c[,1] <- trimws(c[,1])
-  colnames(c) <- c("Key", "Value")
-  return(c)
-}
-
-
-
-#' Data frame of BirdNET detections
-#'
-#' @param path path
-#'
-#' @import magrittr
-#' @inheritParams BirdNET_results2txt
-#' @keywords internal
-#'
-BirdNET_table <- function(path = NULL, recursive = FALSE, model = c('BirdNET v2.4', 'Perch v2')) {
-  if (!dir.exists(path)) stop("provide valid path")
-
-  ## binding for global variables to please checks ...
-  label <- time <- species <- hour <- . <- Taxon <- NA
-
-  model <- match.arg(model)
-
-  # Load existing workbook
-  if (model == 'BirdNET v2.4') {
-    my_pattern <- "BirdNET.labels.txt"
-  } else if (model == 'Perch v2') {
-    my_pattern <- 'Perch.labels.txt'
-  }
-
-  # 0.) Check 'BirdNET.results.txt'
-  BirdNET.results.files <- list.files(path = path,
-                                      pattern = my_pattern,
-                                      full.names = T,
-                                      recursive = recursive)
-
-
-  if (length(BirdNET.results.files) >= 1) {
-    # read audacity marks
-    if (interactive()) {
-      message("Read ", model,  " results:\n")
-      df <- pbapply::pblapply(BirdNET.results.files,
-                              readr::read_delim,
-                              delim = "\t",
-                              progress = FALSE,
-                              show_col_types = FALSE,
-                              col_names = c("start", "end", "label")) %>%
-        do.call("rbind",.)
-    } else {
-      df <- lapply(BirdNET.results.files,
-                   readr::read_delim,
-                   delim = "\t",
-                   progress = FALSE,
-                   show_col_types = FALSE,
-                   col_names = c("start", "end", "label")) %>%
-        do.call("rbind",.)
-    }
-
-    ## split label into single variables
-    df <- df %>%
-      mutate(
-        species = stringr::str_extract(label, "^.*(?=\\s\\d{4}-\\d{2}-\\d{2})"),
-        date    = as.Date(stringr::str_extract(label, "\\d{4}-\\d{2}-\\d{2}")),
-        time    = as.POSIXct(stringr::str_extract(label, "\\d{2}:\\d{2}:\\d{2}"),
-                             format = "%H:%M:%S"),
-        score   = as.numeric(stringr::str_extract(label, "\\d+\\.\\d+(?=\\s*\\])")),
-        hour = lubridate::hour(time))
-
-    output <- df
-
-    # count per day
-    records.day <- df[,c("species", "date")] %>%
-      dplyr::group_by(species, date) %>%
-      dplyr::summarise(n = dplyr::n())
-
-    # count per hour
-    df <- df[,c("species", "hour")] %>%
-      dplyr::group_by(species, hour) %>%
-      dplyr::summarise(n = dplyr::n())
-
-
-    df[["species"]] <- factor(x = df[["species"]],
-                              levels = unique(as.character(sort(df$species, decreasing = TRUE))))
-
-    return(list(records.all = output[,c("species", "date", "time")],
-                records.day = records.day,
-                records.hour = df))
-
-  }
-}
-
 #' convert start_time to seconds
 #' @param t character vector
 #' @keywords internal
@@ -217,9 +108,6 @@ non_overlapping <- function(df) {
                        to = out$end)
   df.new <- dplyr::left_join(df.new, df[,c("starting_time", "event", "from")], by = "from")
 }
-
-
-
 
 #' Get date and time from file name of the form `YYYYMMDD_HHMMSS`
 #'
@@ -448,7 +336,6 @@ BirdNET_extract2 <- function(path = NULL,
     txt <- xlsx[[r, "File"]]
 
     ## find wav file
-    # Sun Aug  4 12:27:06 2024 ------------------------------
     # Take file argument and identify corresponding audio file
     if (!file.exists(txt)) {
       stop(txt, "does not exist")
@@ -462,9 +349,6 @@ BirdNET_extract2 <- function(path = NULL,
       format <- ".WAV"
     }
 
-    # Sat Aug  3 21:28:08 2024 ------------------------------
-    #wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.labels2", "WAV")
-    #wav <- stringr::str_replace( xlsx[[r, "File"]], "BirdNET.labels2.txt", "WAV")
 
     if (!file.exists(wav)) {
       wav <- stringr::str_replace(wav, 'WAV', 'wav')
@@ -588,28 +472,6 @@ BirdNET_extract2 <- function(path = NULL,
 
     openxlsx::saveWorkbook(wb, file.path(path, "BirdNET2.xlsx"), overwrite = TRUE)
   }
-
-  # if (isTRUE(approx_snr)) {
-  #
-  #   cat("Compute SNRs ... \n")
-  #   SNR <- BirdNET_snr(path = path)
-  #   cat("done\n")
-  #   SNR <- dplyr::left_join(data.frame(sound.files = basename(out)),
-  #                           SNR, by = "sound.files")
-  #   SNR <- data.frame(SNR = floor(SNR$SNR))
-  #   ## open workbook as it is ...
-  #   wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET2.xlsx"))
-  #
-  #   ## insert in wb ...
-  #   openxlsx::writeData(
-  #     wb = wb,
-  #     sheet = 1,
-  #     x = SNR,
-  #     startCol = ncol(openxlsx::readWorkbook(file.path(path, "BirdNET2.xlsx"))) + 1,
-  #     colNames = TRUE,
-  #     startRow = 1)
-  #   openxlsx::saveWorkbook(wb, file.path(path, "BirdNET2.xlsx"), overwrite = TRUE)
-  # }
 }
 
 #' Append columns to existing xslx database
@@ -769,81 +631,656 @@ get_timestamp <- function(x) {
     sec = as.numeric(substr(basename(x), 14, 15)))
 }
 
-
-#' Format BirdNET.xlsx in a nice style
-#'
-#' @param path path
-#' @inheritParams BirdNET
-#' @import openxlsx
-#' @export
-#'
-reformat_xlsx <- function(path, model = c('BirdNET v2.4', 'Perch v2')) {
-
-  if (!dir.exists(path)) stop("provide valid path")
-  model <- match.arg(model)
-
-  # Load existing workbook
-  if (model == 'BirdNET v2.4') {
-    xlsx <- 'BirdNET.xlsx'
-  } else if (model == 'Perch v2') {
-    xlsx <- 'Perch.xlsx'
-  }
-
-  wb <- openxlsx::loadWorkbook(file.path(path, xlsx))
-
-  # List of sheets to format
-  sheets <- c("Records", "Meta")
-
-  # Define border style once
-  border_style <- openxlsx::createStyle(border = "TopBottomLeftRight")
-
-  for (sh in sheets) {
-
-    # Get number of rows/cols in the sheet
-    data <- openxlsx::readWorkbook(file.path(path, xlsx), sheet = sh)
-    n_rows <- nrow(data) + 1   # +1 for header
-    n_cols <- ncol(data)
-
-    # (i) Auto column width
-    openxlsx::setColWidths(wb, sheet = sh, cols = 1:n_cols, widths = "auto")
-
-    # (ii) Add borders to all cells
-    openxlsx::addStyle(
-      wb, sheet = sh, style = border_style,
-      rows = 1:n_rows, cols = 1:n_cols,
-      gridExpand = TRUE, stack = TRUE
-    )
-
-    # (iii) Add filter to header row
-    openxlsx::addFilter(wb, sheet = sh, rows = 1, cols = 1:n_cols)
-
-    # (iv) Freeze first row
-    openxlsx::freezePane(wb, sheet = sh, firstActiveRow = 2)
-  }
-
-  # Save workbook
-  openxlsx::saveWorkbook(wb, file.path(path, xlsx), overwrite = TRUE)
-}
-
-#' Replacement for \code{\link[seewave]{read.audacity}} to avoid problems with certain labels containing apostrophes etc.
+#' Wrapper to call bioacoustics::threshold_detection
 #'
 #' @description
-#' Read content of a text file and export in format matching \code{\link[seewave]{read.audacity}}
+#' Queries bioacoustics::\code{\link[bioacoustics]{threshold_detection}} to detect events in a audio file and exports labels to explore the file in audacity
 #'
-#'
-#' @param file A .txt file
-#' @param delim delim
-#' @param col_names col_names
-#' @importFrom readr read_delim
+#' @param wav.file Audio file. Currently supported are WAV or MP3 files.
+#' @param overwrite logical
+#' @inheritParams bioacoustics::threshold_detection
+#' @param audacity logical. If TRUE export audacity lables as txt file
+#' @return list (see \code{\link[bioacoustics]{threshold_detection}})
+#' @examples
+#' # example code
+#'path <- system.file("extdata", "20211220_064253.wav", package = "NocMigR2")
+#'TD <- find_events(
+#'wav.file = path,
+#'audacity = FALSE, # Write audacity labels
+#'threshold = 8, # SNR in db
+#'min_dur = 20, # min length in ms
+#'max_dur = 300, # max length in ms
+#'LPF = 5000, # low-pass filter at 500
+#'HPF = 1000)
 #' @export
 #'
-read.audacity <- function(file, delim = '\t', col_names = c("t1", "t2", "label", "Score")) {
-  df <- readr::read_delim(file = file,
-                          delim = delim,
-                          col_names = col_names,
-                          show_col_types = FALSE,
-                          progress = FALSE)
+find_events <- function(wav.file = NULL,
+                        audacity = FALSE,
+                        overwrite = TRUE,
+                        threshold = 10,
+                        min_dur = 10,
+                        max_dur = 5000,
+                        min_TBE = 40,
+                        max_TBE = Inf,
+                        LPF = 15000,
+                        HPF = 80,
+                        FFT_size = 1024,
+                        start_thr = 20,
+                        end_thr = 48,
+                        SNR_thr = 4,
+                        angle_thr = 125,
+                        NWS = 1500,
+                        time_scale = 2) {
 
-  df <- rbind(data.frame(file = file, df))
+  ## get file extension
+  file_format <- tools::file_ext(wav.file)
+
+  ## check if execution is needed
+  check <- TRUE
+
+  if (overwrite == FALSE) {
+    txt <- paste0(substr(wav.file, 1, nchar(wav.file) - nchar(tools::file_ext(wav.file))),"txt")
+    if (file.exists(txt)) {
+      cat(txt, "already exists. Skip recording\n")
+      check <- FALSE
+    }
+  }
+
+  if (check == TRUE) {
+    TD <- suppressWarnings(suppressMessages(bioacoustics::threshold_detection(
+      wave = wav.file,
+      threshold = threshold,
+      min_dur = min_dur,
+      max_dur = max_dur,
+      min_TBE = min_TBE,
+      max_TBE = max_TBE,
+      time_exp = 1,
+      LPF = LPF,
+      HPF = HPF,
+      start_thr = start_thr,
+      end_thr = end_thr,
+      SNR_thr = SNR_thr,
+      angle_thr = angle_thr,
+      NWS = NWS,
+      settings = TRUE,
+      acoustic_feat = TRUE,
+      metadata = FALSE,
+      spectro_dir = NULL,
+      time_scale = 2,
+      ticks = TRUE)))
+
+    if (!is.null(TD$data) & isTRUE(audacity)) {
+      ## write audacity marks based on events: times in seconds
+
+      ## ask if file has had date_time header for pretty labels
+      head <- stringr::str_remove(TD$data$event_data$filename, paste0(".", file_format))
+
+      if (all(nchar(head) == 15) &
+          is.numeric(as.numeric(substr(head, 1, 8))) &
+          is.numeric(as.numeric(substr(head, 10, 15)))) {
+        origin <- lubridate::make_datetime(
+          year = as.numeric(substr(head, 1, 4)),
+          month = as.numeric(substr(head, 5, 6)),
+          day = as.numeric(substr(head, 7, 8)),
+          hour = as.numeric(substr(head, 10, 11)),
+          min = as.numeric(substr(head, 12, 13)),
+          sec = as.numeric(substr(head, 14, 15)))
+      } else {
+        origin <- lubridate::make_datetime(2000, 01, 01, 0, 0, 0)
+      }
+
+      t <- TD$data$event_data$starting_time
+      t1 <-
+        (as.numeric(substr(t, 1,2)) * 60 * 60) +
+        (as.numeric(substr(t, 4,5)) * 60) +
+        as.numeric(substr(t, 7,12))
+      t2 <- t1 + (TD$data$event_data$duration / 1000)
+      f1 <- TD$data$event_data$freq_center
+      f2 <- TD$data$event_data$freq_max_amp
+      label <- origin + t1
+      dff <- data.frame(label, t1, t2, f1, f2)
+      seewave::write.audacity(
+        dff,
+        filename = paste0(substr(
+          wav.file, 1, nchar(wav.file) - nchar(tools::file_ext(wav.file))),"txt"))
+    }
+    ## try to free memory
+    x <- gc(verbose = FALSE); rm(x)
+    return(TD)
+  }
+}
+
+#' Extract detected events and writes them to a sound file
+#'
+#' @description Uses audacity labels, either obtained from a text file created with \code{\link[seewave]{write.audacity}} or an object of class \code{\link[bioacoustics]{threshold_detection}} to extract audio events from the original sound file.
+#'
+#' @param threshold_detection either class threshold_detection or path to audacity marks
+#' @param buffer Buffer in seconds added to before and after the event (default 1). Controls also the detection of overlapping events.
+#' @param path where to look up the sound file
+#' @return data frame
+#' @inheritParams rename_recording
+#' @inheritParams split_wave
+#' @inheritParams bioacoustics::threshold_detection
+#' @importFrom tuneR bind
+#' @examples
+#' # example code
+#' \dontrun{
+#'path <- system.file("extdata", "20211220_064253.wav", package = "NocMigR2")
+#'TD <- find_events(
+#'wav.file = path,
+#'audacity = FALSE, # Write audacity labels
+#'threshold = 8, # SNR in db
+#'min_dur = 20, # min length in ms
+#'max_dur = 300, # max length in ms
+#'LPF = 5000, # low-pass filter at 500
+#'HPF = 1000)
+#'
+#'extract_events(threshold_detection = TD,
+#'path = "PATH TO FILE",
+#'format = "wav",
+#'LPF = 4000,
+#'HPF = 1000,
+#'buffer = 1)
+#'
+#'}
+#'
+#' @export
+#'
+extract_events <- function(threshold_detection,
+                           buffer = 1,
+                           format = c("wav", "mp3"),
+                           path,
+                           LPF = NULL,
+                           HPF = NULL) {
+
+  format <- match.arg(format)
+
+  ## check for existing output and drop a comment if found
+  previous_output <- list.files(path, "_extracted.WAV", ignore.case = TRUE)
+  if (length(previous_output)) cat("\nExisting files '_extracted.WAV will be overwritten!\n")
+
+  ## get df of interest
+  if (is.character(threshold_detection)) {
+    df <- update_events(txt = threshold_detection)
+    df$filename <- stringr::str_replace(df$filename, "txt", format)
+    file <- file.path(path, df[1, "filename"])
+  } else if (methods::is(threshold_detection, "threshold_detection")) {
+    df <- inspect_events(threshold_detection)
+    file <- file.path(path, df[1, "filename"])
+  }
+
+  ## get file extension
+  ext <- tools::file_ext(file)
+
+  ## if mp3, convert to wav first and
+  ## then delete wav after processing
+  if (ext == "mp3") {
+    clean_wav <- TRUE
+    old.file <- file
+    audio <- tuneR::readMP3(file)
+    file <- stringr::str_replace(file, paste0(".", ext, collapse = ""), ".WAV")
+    tuneR::writeWave(audio, filename = file)
+    ## update ext
+    ext <- tools::file_ext(file)
+
+  } else {
+    clean_wav <- FALSE
+  }
+
+  ## get metadata of sound file
+  meta <- tuneR::readWave(file, header = T)
+  length <- meta$samples/meta$sample.rate
+
+  ## convert start_times to seconds
+  if (methods::is(threshold_detection, "threshold_detection")) {
+    df[["event"]] <- starting_time2seconds(df[["starting_time"]])
+    ## update starting time to correct label
+    time_offset <- get_DateTime(df[1, "filename"], path)
+    df[["starting_time"]] <- df[["event"]] + time_offset$start
+  }
+
+  ## Mark from based on buffer
+  df[["from"]] <- ifelse(df[["event"]] - buffer >= 0,
+                         df[["event"]] - buffer,
+                         0)
+
+  ## Mark end based on buffer
+  df[["to"]] <- ifelse(df[["event"]] + (df[["event"]]/1000) + buffer < length,
+                       df[["event"]] + (df[["event"]]/1000) + buffer,
+                       length)
+
+  ## sort events in order of appearance (Why unordered in the first place?)
+  df <- df[order(df$from),]
+
+  ## check max amplitude frequency is within desired frequency band
+  ## if none remain, skip!
+  if (!is.null(LPF) & !is.null(HPF)) {
+    ## (binding global variable to please R CMD check)
+    freq_max_amp <- NULL
+    df <- dplyr::filter(df, freq_max_amp < LPF, freq_max_amp > HPF)
+  }
+
+  if (nrow(df) > 0) {
+    ## Check if overlaps can be eliminated
+    df <- non_overlapping(df)
+
+    ## extract audio --> CHECK OVERLAPPING ISSUES IF ANY
+    audio <- lapply(1:nrow(df), function(i) {
+      ## read signal
+      x <- tuneR::readWave(file, df[i, "from"], df[i, "to"], "seconds")
+      #if (!is.null(downsample)) x <- tuneR::downsample(x, downsample)
+      #if (mono == TRUE & x@stereo == TRUE) x <- tuneR::mono(x, which = 'both')
+      return(x)
+    })
+
+    ## clean-up
+    if (clean_wav == TRUE) unlink(file)
+
+    ## concatenate sound
+    audio <- do.call("bind", audio)
+    tuneR::writeWave(audio,
+                     stringr::str_replace(file, paste0(".", ext, collapse = ""), "_extracted.WAV"))
+
+    ## write labels for use in Audacity
+    ## adjust times for extracted audio file
+    df.adj <- df
+
+    ## set first from = 0 and to = to - from
+    df.adj$to[1] <- df.adj$to[1] - df.adj$from[1]
+    df.adj$from[1] <- 0
+
+    ## now adjust all others ...
+    if (nrow(df.adj) > 1) {
+      for (i in 2:nrow(df.adj)) {
+        df.adj$to[i] <- df.adj$to[i] - df.adj$from[i] + df.adj$to[i - 1]
+        df.adj$from[i] <- df.adj$to[i - 1]
+      }
+
+    }
+    dff <- data.frame(label = df.adj$starting_time, t1 = df.adj$from, t2 = df.adj$to)
+    seewave::write.audacity(
+      dff,
+      filename = stringr::str_replace(file, paste0(".", ext, collapse = ""), "_extracted.txt"))
+
+  }
+  ## try to free memory
+  x <- gc(verbose = FALSE); rm(x)
   return(df)
 }
+
+#' Rename recording with a string of the form YYYYMMDD_HHMMSS
+#'
+#' @description
+#' Rename recordings using time-stamps derived from \code{ctime} of the audio file.
+#'
+#' @details
+#' Currently renaming distinguishes two cases:
+#'    (1) \code{time_reference = 'first'}: Deriving time based on *ctime* (or *mtime*) of first recording and compute for subsequent recordings based on recording duration.
+#'    (2) \code{time_reference = 'each'}: Deriving time based on *ctime* (or *mtime*) of each recording separately
+#'
+#' In order to figure out the correct strategy for recorders not listed here (or when in doubt), make sure to check file properties carefully and run this function with setting \code{.simulate = TRUE}. The choice of *ctime* vs *mtime* might vary depending on the used computer.
+#'
+#' @param path
+#' Path to folder containing audio files
+#' @param time_reference
+#' (1) Specify \code{'first'} when all recordings share ctime/mtime of the first recording (e.g. \strong{Olympus LS recorder}). (2) Specify \code{'each'} when recordings have unique ctime/mtime (e.g. \strong{Sony PCM recorder})
+#'
+#' @param ctime logical. defaults to \code{TRUE}. If \code{FALSE} mtime is used instead.
+#'
+#' @param format
+#' audio format. Supported are \code{'wav'} and \code{'mp3'}
+#' @param .simulate
+#'  Logical. Default \code{FALSE}
+#' @return TRUE if successful
+#' @examples
+#' # example code
+#' rename_recording(
+#' path = system.file("extdata", package = "NocMigR2"),
+#' format = "wav",
+#' .simulate = TRUE)
+#'
+#' @export
+#'
+rename_recording <- function(
+    path = NULL,
+    time_reference = c("first", "each"),
+    format = c("wav", "mp3"),
+    ctime = TRUE,
+    .simulate = FALSE) {
+
+  ## match function arguments
+  time_reference <- match.arg(time_reference)
+  which_time <- ifelse(isTRUE(ctime), 'ctime', 'mtime')
+  format <- match.arg(format)
+
+  ## list recordings
+  records <- list.files(path = path, pattern = format, ignore.case = TRUE)
+  if (length(records) == 0) stop("No ", format, " files found at ", path)
+
+  ## get duration of recordings
+  seconds <- sapply(file.path(path, records), function(x) {
+    ## check format
+    if (format == "wav") {
+      y <- tuneR::readWave(x, header = TRUE)
+      y[["samples"]]/y[["sample.rate"]]
+    } else if (format == "mp3") {
+      y <- tuneR::readMP3(x)
+      as.numeric(summary(y)[[1]])/y@samp.rate
+    }})
+
+  ## Select option to handle times
+  ## Olympus LS  and alike:
+  ## Take ctime/mtime of first recording; label in ascending order of file names
+  if (time_reference == "first") {
+
+    ## get ctime/mtime of first audio
+    meta <- file.info(file.path(path, records[1]))
+
+    if (which_time == 'ctime') {
+      ## ctime refers to start of first recording
+      df <- data.frame(old.name = records, seconds = seconds, time = meta[[which_time]])
+      if (nrow(df) > 1) {
+        ## compute times of recordings 2:N
+        for (i in 2:nrow(df)) {
+          df[i, "time"] <- df[i - 1, "time"] + df[i - 1, "seconds"]
+        }
+      }
+    } else if (which_time == 'mtime') {
+      ## mtime refers to end of last recording
+      df <- data.frame(old.name = records, seconds = seconds)
+      df[["time"]] <- meta[[which_time]] - df[["seconds"]]
+      if (nrow(df) > 1) {
+        ## compute times of recordings N-1:1
+        for (i in (nrow(df) - 1):1) {
+          df[i, "time"] <- df[i + 1, "time"] - df[i, "seconds"]
+        }
+      }
+    }
+
+    ## Sony PCM and alike:
+  } else if (time_reference == "each" ) {
+    ## get time created of first recording
+    meta <- lapply(file.path(path, records), file.info)
+    meta <- do.call("rbind", meta)
+
+    df <- data.frame(old.name = records,
+                     seconds = seconds,
+                     time = meta[[which_time]])
+  }
+
+  ## create file names based on ctime/mtime of recordings
+  df[["new.name"]] <- paste0(substr(df[["time"]], 1, 4),
+                             substr(df[["time"]], 6, 7),
+                             substr(df[["time"]], 9,10),
+                             "_",
+                             substr(df[["time"]], 12, 13),
+                             substr(df[["time"]], 15, 16),
+                             substr(df[["time"]], 18, 19),
+                             ".", format)
+  rownames(df) <- NULL
+
+  if (isTRUE(.simulate)) {
+    #cat("Only show how file.rename will change files!")
+  } else {
+    ## check:
+    if (any(duplicated(df$new.name))) stop("Conflict: Identical file names created. Stop.")
+
+    file.rename(from = file.path(path, records),
+                to = file.path(path, df[["new.name"]]))
+  }
+
+  return(df[c("old.name", "new.name")])
+
+}
+
+#' Simple function to split large audio into segments
+#'
+#' @description
+#' Cuts audio file into segments for processing
+#'
+#' @details
+#' Optional parameters \code{downsample}, \code{mono} & \code{rescale} require  \code{\link[reticulate]{source_python}} and several python libraries (\code{source_python}, \code{audioop} & \code{wave}).
+#'
+#' @param path path.
+#' @param file file name.
+#' @param segment segment length in seconds. Default 600.
+#' @param downsample optional. allows to downsample to a new sampling rate in Hz.
+#' @param mono logical. By default coerces to mono.
+#' @param rescale optional. allows to resacale the wav to a new bit rate (e.g., "8", "16", "24").
+#' @param discard_input logical. Allows to discard input file after transformation. Defaults to \code{FALSE}
+#' @return none
+#' @examples
+#' \dontrun{
+#' ## create test folder
+#' dir.create("test_folder")
+#' ## copy example audio
+#' file.copy(from = system.file("extdata", "20211220_064253.wav", package = "NocMigR2"),
+#'          to = "test_folder/20211220_064253.wav")
+#' ## rename
+#' x <- rename_recording("test_folder")
+#' x$new.name
+#' ## split in segments
+#' split_wave(file = x$new.name, # audio file
+#'            path = "test_folder/", # folder
+#'            segment = 3) # cut in 3 sec segments
+#' ## show files
+#' list.files("test_folder/split/")
+#' ## delete folder
+#' unlink("test_folder", recursive = T)
+#' }
+#'
+#' @export
+#'
+split_wave <- function(
+    path = NULL,
+    file = NULL,
+    segment = 600,
+    downsample = NULL,
+    mono = TRUE,
+    rescale = NULL,
+    discard_input = FALSE) {
+
+
+  #format <- match.arg(format)
+  ## define file name
+  wave_file <- file.path(path, file)
+
+  ## rename wave_file before processing to avoid issues when segements are saved
+  ## in the same folder --> rename afterwards
+  wave_file.copy <-
+    stringr::str_replace(wave_file,
+                         paste0(".", tools::file_ext(wave_file)),
+                         paste0(".copy.", tools::file_ext(wave_file)))
+
+  check.rename <- file.rename(from = wave_file,
+                              to = wave_file.copy)
+
+  #### downsample ####
+  if (!is.null(downsample)) {
+    ## check if reticulate is available
+    rlang::check_installed("reticulate", reason = "to use `split_wave()`")
+    ## check python libraries are available
+    if (interactive()) {
+      ## try to load ...
+      check.pydub <- try(reticulate::import(module = "pydub", delay_load = TRUE))
+      if (class(check.pydub)[1] == "try-error") {
+        stop("pydub is missing. Try to install with reticulate::py_install('pydub')\n")
+      }
+      ## try to load ...
+      check.audioop <- try(reticulate::import(module = "audioop", delay_load = TRUE))
+      if (class(check.audioop)[1] == "try-error") {
+        stop("audioop is missing. Try to install with reticulate::py_install('audioop')\n")
+      }
+      ## try to load ...
+      check.wave <- try(reticulate::import(module = "wave", delay_load = TRUE))
+      if (class(check.wave)[1] == "try-error") {
+        stop("wave is missing. Try to install with reticulate::py_install('wave')\n")
+      }
+    }
+
+    ## down sample and save in temp folder
+    temp.dir <- file.path(path, "temp")
+    if (!dir.exists(temp.dir)) dir.create(temp.dir)
+    new_wave_file <- file.path(file.path(path, "temp"), file)
+
+    ## (binding global variables to please R CMD check)
+    resample_wave_mono <- resample_wave_stereo <- NULL
+
+    ## make python script available
+    reticulate::source_python(
+      system.file("python", "resample_wave_mono.py", package = "NocMigR"))
+    cat("\nDownsampling of", file,  "to", downsample, "Hz...\t")
+
+    #### mono conversion ####
+    if (mono == TRUE) {
+      check <- resample_wave_mono(wave_file.copy, new_wave_file, downsample)
+    } else {
+      check <- resample_wave_stereo(wave_file.copy, new_wave_file, downsample)
+    }
+    ## check that scripts produced output
+    wave_file.copy <- new_wave_file
+    if (check == FALSE) stop("Python error")
+    cat("done\n")
+  }
+
+  #### read header of wave file ####
+  audio <- tuneR::readWave(filename = wave_file.copy, header = TRUE)
+  ## estimate length in seconds
+  sec <- audio$samples / audio$sample.rate
+  ## define breaks to write audio chunks (keep unique) if
+  ## last is identical to duration
+  breaks <- unique(c(seq(from = 0, to = sec, by = segment), sec))
+
+  ## get time from file name
+  meta <- get_DateTime(target = basename(wave_file.copy), target.path = path)
+
+  ## define segments
+  df <- data.frame(ctime = meta$start,
+                   from = breaks[1:(length(breaks) - 1)],
+                   to = breaks[-1],
+                   seconds = diff(breaks))
+
+  ## adjust times for date_time label as header
+  if (nrow(df) > 1) {
+    for (i in 2:nrow(df)) {
+      df[i, "ctime"] <- df[i - 1, "ctime"] + df[i - 1, "seconds"]
+    }
+  }
+
+  ## create file names based on ctime of recordings
+  df[["new.name"]] <- paste0(substr(df[["ctime"]], 1, 4),
+                             substr(df[["ctime"]], 6, 7),
+                             substr(df[["ctime"]], 9,10),
+                             "_",
+                             substr(df[["ctime"]], 12, 13),
+                             substr(df[["ctime"]], 15, 16),
+                             substr(df[["ctime"]], 18, 19),
+                             ".wav")
+
+  if (isFALSE(discard_input)) {
+    ## create subfolder `split`
+    if (!dir.exists(file.path(path, "split"))) dir.create(file.path(path, "split"))
+    subfolder <- file.path(path, "split")
+  } else if (isTRUE(discard_input)) {
+    subfolder <- path
+  }
+
+  ## save memory
+  #  rm(list = c("audio", "meta", "sec", "breaks"))
+  cat("Split ... \n")
+
+  #### extract segments #####
+  silent <- pbapply::pblapply(1:nrow(df), function(i) {
+    ## read audio
+    audio <- tuneR::readWave(filename = wave_file.copy,
+                             from = df[i, "from"],
+                             to = df[i, "to"],
+                             units = "seconds")
+    suppressWarnings(tuneR::writeWave(audio, filename = file.path(subfolder, df[i, "new.name"])))
+    rm(audio)
+    gc(full = T, verbose = F)
+  })
+
+  if (isTRUE(discard_input)) {
+    unlink(wave_file.copy)
+  } else if (isFALSE(discard_input)) {
+    check.rename <- file.rename(wave_file.copy, wave_file)
+  }
+}
+#' segment wave files
+#'
+#' @description
+#' Extracts segments of a user defined length from input files. Input files are either moved to a subfolder (\code{keep.input = TRUE}) or deleted after the processing is executed.
+#'
+#'
+#' @param path path
+#' @param length length of individuals audio segments in seconds, only accepting multiples of three. Defaults to 30
+#'
+#' @param keep.input logical. defaults to TRUE
+#'
+#' @inheritParams NocMig_process
+#'
+#' @export
+#'
+segment_wave <- function(path,
+                         length = 30,
+                         format = c("wav", "mp3"),
+                         keep.input = FALSE) {
+
+  ## (1) check parameter values-------------------------------------------------
+  if (!dir.exists(path)) {
+    cat(path, "not found!\n")
+  }
+  format <- match.arg(format)
+
+  ## (2) move wave files to subfolder -----------------------------------------
+  input <- list.files(path, full.names = F, pattern = paste0(".", format),
+                      ignore.case = T, recursive = F)
+  dir.create(file.path(path, 'input'), showWarnings = FALSE)
+  x <- file.rename(from = file.path(path, input),
+                   to = file.path(path, 'input', input))
+
+  ## (3) segment wave files ----------------------------------------------------
+  out <- lapply(input, function(x) {
+    ##  obtain meta data -------------------------------------------------------
+    meta <- get_DateTime(target = basename(x), file.path(path, 'input'))
+    ## define segment start points ---------------------------------------------
+    breaks <-
+      c(seq(from = 0, to = meta[["sec"]], by = length), meta[["sec"]]) %>%
+      unique()
+    ## define segment end points -----------------------------------------------
+    df <- data.frame(time = meta[["start"]],
+                     from = breaks[1:(length(breaks) - 1)],
+                     to = breaks[-1],
+                     seconds = diff(breaks))
+    #
+    ## create header based on datetime of recording segments -------------------
+    if (nrow(df) > 1) {
+      for (i in 2:nrow(df)) {
+        df[i, "time"] <- df[i - 1, "time"] + df[i - 1, "seconds"]
+      }
+    }
+    ## create file names based on ctime of recordings
+    df[["new.name"]] <- paste0(substr(df[["time"]], 1, 4),
+                               substr(df[["time"]], 6, 7),
+                               substr(df[["time"]], 9,10),
+                               "_",
+                               substr(df[["time"]], 12, 13),
+                               substr(df[["time"]], 15, 16),
+                               substr(df[["time"]], 18, 19),
+                               paste0(".", format))
+    ## run extractions ---------------------------------------------------------
+    silent <- pbapply::pblapply(1:nrow(df), function(i) {
+      ## read audio
+      audio <- tuneR::readWave(filename = file.path(path, 'input',x),
+                               from = df[i, "from"],
+                               to = df[i, "to"],
+                               units = "seconds")
+      tuneR::writeWave(audio, filename = file.path(path, df[i, "new.name"]))
+    })
+
+  })
+  ## (4) Remove input files if requested ---------------------------------------
+  if (isFALSE(keep.input)) unlink(file.path(path, 'input'), recursive = T)
+}
+

@@ -31,3 +31,25 @@ AudioMothSetup <- function(date = Sys.Date(), MB = 128*1000, mAH = 2900, mAH.d, 
 suncalc::getSunlightTimes(date, lat = lat, lon = lon, tz = tz, keep = c("sunriseEnd", "sunsetStart"))
 }
 
+#' Read AudioMoth configuration file
+#'
+#' Reads and parses an AudioMoth configuration file.
+#'
+#' @param filename Path to the configuration file to read
+#' @return A data frame of matching annotations
+#' @export
+#' @source https://github.com/edwbaker/SonicScrewdriveR/blob/master/R/audiomoth.R
+#' @importFrom utils read.csv
+#' @examples
+#' \dontrun{
+#' audiomothConfig("./CONFIG.TXT")
+#' }
+#' @export
+#'
+audiomothConfig <- function(filename) {
+  f <- readLines(filename)
+  c <- read.csv(textConnection(sub(":", "|", f)), header = FALSE, sep = "|")
+  c[,1] <- trimws(c[,1])
+  colnames(c) <- c("Key", "Value")
+  return(c)
+}
