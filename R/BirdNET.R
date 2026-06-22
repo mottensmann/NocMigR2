@@ -678,7 +678,7 @@ BirdNET_extract <- function(path = NULL,
   ## 1.) Check for BirdNET.xlsx and load if present
   if (!file.exists(file.path(path, my_xlsx))) stop(my_xlsx, " not found")
   xlsx <- readxl::read_xlsx(file.path(path, my_xlsx))
-  xlsx_head <- readxl::read_xlsx(path = db, sheet = 1, n_max = 1)
+  #xlsx_head <- readxl::read_xlsx(path = db, sheet = 1, n_max = 1)
 
   ## check if BirdNET.xlsx was already formatted with BirdNET_extract
   ## Attempt by all files unique and containing extracted in file name
