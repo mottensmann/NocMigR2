@@ -22,6 +22,7 @@ Imports:
     magrittr,
     methods,
     openxlsx,
+    openxlsx2,
     pbapply,
     readr,
     readxl,
