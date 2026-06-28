@@ -1,8 +1,8 @@
 Package: NocMigR2
 Type: Package
 Title: A Suite of Functions to Play with NocMig and Other Long-Term Recordings
-Version: 0.1.2.9900
-Date: 2026-06-11
+Version: 0.1.3.9900
+Date: 2026-06-22
 Authors@R: c(
     person("Meinolf", "Ottensmann", email = "meinolf.ottensmann@web.de", role = c("aut","cre"), 
     comment = c(ORCID = "0000-0003-3112-6928")))
@@ -16,12 +16,10 @@ Imports:
     dplyr,
     egg,
     ggplot2,
-    grDevices,
     jsonlite,
     lubridate,
     magrittr,
     methods,
-    openxlsx,
     openxlsx2,
     pbapply,
     readr,
