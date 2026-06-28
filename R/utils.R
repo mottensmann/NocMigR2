@@ -272,8 +272,6 @@ BirdNET_extract2 <- function(path = NULL,
                              nmax = NULL,
                              sec = 1,
                              output = NULL,
-                             #approx_snr = FALSE,
-                             spectro = FALSE,
                              hyperlink = T) {
 
   ## binding for global variables to please checks ...
@@ -388,89 +386,34 @@ BirdNET_extract2 <- function(path = NULL,
       object = event,
       filename = name)
 
-    if (isTRUE(spectro)) {
-      ## if stereo average to mon
-      if (isTRUE(event@stereo)) {
-        event <- tuneR::stereo(tuneR::mono(event, "both"),
-                               tuneR::mono(event, "both"))
-      }
-
-      # saves plot
-      dir.create(file.path(dirname(name), "png"), showWarnings = FALSE)
-      grDevices::png(
-        file.path(file.path(dirname(name), "png"),
-                  stringr::str_replace(basename(name), format, ".png")),
-        width = 1200, height = 430, res = 72)
-
-      seewave::spectro(wave = event,
-                       wl = 1024,
-                       grid = F,
-                       ovlp = 90,
-                       fastdisp = T,
-                       scale = F,
-                       flab = "",
-                       tlab = "",
-                       flim = c(2,8),
-                       colbg = "white",
-                       main = basename(name),
-                       palette = seewave::reverse.gray.colors.2)
-      grDevices::dev.off()
-    }
-
-
     return(name)
   })
 
 
   ## put hyperlink in excel sheet?
-  if (isTRUE(hyperlink) & isFALSE(spectro)) {
+  if (isTRUE(hyperlink)) {
 
     ## open workbook as it is ...
-    wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET2.xlsx"))
+    wb <- openxlsx2::wb_load(file.path(path, "BirdNET2.xlsx"))
+    # Get number of rows/cols in the sheet
+    data <- openxlsx2::read_xlsx(file.path(path, "BirdNET2.xlsx"), sheet = 'Records')
+    n_rows <- nrow(data) + 1   # +1 for header
+    n_cols <- ncol(data)
 
-    ## create hyperlink ... check order?
-    wav.link <- out; class(wav.link) <- "hyperlink"
+    ## create hyperlink
+    urls_full     <- out
+    urls_short    <- basename(out)
 
-    ## insert in wb ...
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = wav.link,
-                        startCol = 12,
-                        colNames = FALSE,
-                        startRow = 2)
-    openxlsx::saveWorkbook(wb, file.path(path, "BirdNET2.xlsx"), overwrite = TRUE)
-  } else if (isTRUE(hyperlink) & isTRUE(spectro))  {
-
-    ## open workbook as it is ...
-    wb <- openxlsx::loadWorkbook(file.path(path, "BirdNET2.xlsx"))
-
-    ## create hyperlink ... check order?
-    wav.link <- out; class(wav.link) <- "hyperlink"
 
     ## insert in wb ...
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = wav.link,
-                        startCol = 12,
-                        colNames = FALSE,
-                        startRow = 2)
+    wb <- openxlsx2::wb_add_formula(
+      wb = wb,
+      sheet = "Records",
+      dims = openxlsx2::wb_dims(rows = 2:(n_rows), cols = which(names(data) == "File")),
+      x = paste0('HYPERLINK("', urls_full, '","', urls_short, '")'),
+      array = FALSE)
 
-    ## create hyperlink ... check order?
-
-    png.link <- data.frame(
-      png = file.path(file.path(dirname(out), "png"),
-                      stringr::str_replace(basename(out), format, ".png")))
-    class(png.link$png) <- "hyperlink"
-
-    ## insert in wb ...
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = png.link,
-                        startCol = 13,
-                        colNames = TRUE,
-                        startRow = 1)
-
-    openxlsx::saveWorkbook(wb, file.path(path, "BirdNET2.xlsx"), overwrite = TRUE)
+    openxlsx2::wb_save(wb, file.path(path, "BirdNET2.xlsx"), overwrite = TRUE)
   }
 }
 
@@ -501,17 +444,17 @@ xlsx_append <- function(path, data, model = c('BirdNET v2.4', 'Perch v2')) {
   df <- dplyr::left_join(xlsx, data, by = c("File" = "file"))
 
   ## open workbook as it is ...
-  wb <- openxlsx::loadWorkbook(file.path(path, xlsx))
+  wb <- openxlsx2::wb_load(file.path(path, xlsx))
 
   ## insert in wb ...
-  openxlsx::writeData(
+  wb <- openxlsx2::wb_add_data(
     wb = wb,
     sheet = 1,
     x = df[,c("SNR", "ampl_mean", "loudness_mean", "loudness_median", "loudness_sd")],
-    startCol = ncol(xlsx) + 1,
+    start_col = ncol(xlsx) + 1,
     colNames = TRUE,
-    startRow = 1)
-  openxlsx::saveWorkbook(wb, file.path(path, xlsx), overwrite = TRUE)
+    start_row = 1)
+  openxlsx2::wb_save(wb, file.path(path, xlsx), overwrite = TRUE)
   return(df)
 }
 

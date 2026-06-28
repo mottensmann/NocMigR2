@@ -9,7 +9,11 @@
 #' @import magrittr
 #' @export
 #'
-BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FALSE, model = c('BirdNET v2.4', 'Perch v2')) {
+BirdNET <- function(path = NULL,
+                    recursive = FALSE,
+                    meta = NULL,
+                    am_config = FALSE,
+                    model = c('BirdNET v2.4', 'Perch v2')) {
 
   if (!dir.exists(path)) stop("provide valid path")
   model <- match.arg(model)
@@ -34,7 +38,6 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
   dirs2 <- stringr::str_remove(dirs, pattern = path)
   if (any(dirs2 == 'extracted')) {
     warning("Detected folder", dirs[which(dirs2 == "extracted")], ".Ignore all wave files in this folder!\n")
-
   }
 
   ## exclude folder extracted if present
@@ -55,8 +58,9 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
   if (nchar(as.character(to)) == 10) to <- to + 1
 
   ## Estimat total recording duration
-  message("Calculate total duration of ", length(wavs), " recordings:\n")
+  message("Calculate total duration of ", length(wavs), " recordings:")
   duration <- total_duration(path = path, recursive = recursive)[["duration"]]
+  message("Recording duration ", duration, "\n")
 
   ## 2.) Tweak labels
   BirdNET_results <- BirdNET_results2txt(path = path, recursive = recursive, model = model)
@@ -69,7 +73,6 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
                                 model == 'Perch v2' ~ 'Perch',
                                 TRUE ~ model),
     ID = NA,
-    #Date = lubridate::date(BirdNET_results$Start +  BirdNET_results$t1),
     T1 = lubridate::as_datetime(BirdNET_results$Start +  BirdNET_results$t1),
     T2 = lubridate::as_datetime(BirdNET_results$Start +  BirdNET_results$t2),
     Score = BirdNET_results$Score,
@@ -83,8 +86,6 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
   if (is.null(meta)) {
     out <- list(
       Records = Records,
-      #Records.dd = BirdNET_table$records.day,
-      #Records.hh = BirdNET_table$records.hour,
       Meta = data.frame(From = from,
                         To = to,
                         Duration = duration))
@@ -115,24 +116,18 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
       }
     }
 
-    out <- list(
-      Records = Records,
-      #Records.dd = BirdNET_table$records.day,
-      #Records.hh = BirdNET_table$records.hour,
-      Meta = meta)
+    out <- list(Records = Records, Meta = meta)
   }
 
   ## export to xlsx file
-  openxlsx::write.xlsx(x = out, file = file.path(path, xlsx), overwrite = T)
-
+  openxlsx2::write_xlsx(x = out, file = file.path(path, xlsx), overwrite = T, na = '')
+  message("Format ", file.path(path, xlsx))
   reformat_xlsx(path = path, model = model)
-
   message("Created ", file.path(path, xlsx), "\n")
+
   ## check for slashes in file names and repair
   check <- BirdNET_name_repair(path = path, model = model)
-  if (nrow(check) >= 1) {
-    warning("Repaired Taxon names containing slahses '/', replaced by '-'.\n", check)
-  }
+  if (nrow(check) >= 1) warning("Repaired Taxon names containing slahses '/', replaced by '-'.\n", check)
   return(out)
 }
 
@@ -147,7 +142,7 @@ BirdNET <- function(path = NULL, recursive = FALSE, meta = NULL, am_config = FAL
 #' @param keep.false keep audio classified as false positive? defaults to FALSE
 #' @param db local database (.xlsx) to which verified records are added
 #' @param png logical. defaults to FALSE
-#' @import magrittr dplyr
+#' @import magrittr
 #' @export
 #'
 BirdNET_archive_am <- function(
@@ -158,7 +153,7 @@ BirdNET_archive_am <- function(
     png = FALSE) {
 
   ## binding for global variables to please checks ...
-  Verification <- mutate <- Comment <- T1 <- Taxon <- Hour <- n <- . <- child <- file.new <- output <- Min_conf <- Overlap <- Overlap <- Hz <- Sleep <- Rec <- Sensitivity <- NA
+  Verification <- Comment <- T1 <- Taxon <- Hour <- n <- . <- child <- file.new <- output <- Min_conf <- Overlap <- Overlap <- Hz <- Sleep <- Rec <- Sensitivity <- folder.df <- NA
 
   if (isTRUE(png)) warning('use of png = TRUE is deprecated!')
 
@@ -216,12 +211,118 @@ BirdNET_archive_am <- function(
     out <- df[,c("Taxon", "Detector", "T1", "Score", "Comment", "File")] %>%
       cbind(., data_meta)
     out <- out %>%
-      dplyr::mutate(Min_conf = as.numeric(Min_conf),
-                    Overlap = as.numeric(Overlap),
-                    Sensitivity = as.numeric(Sensitivity),
-                    Hz = as.numeric(Hz),
-                    Sleep = as.numeric(Sleep),
-                    Rec = as.numeric(Rec))
+      dplyr::mutate(Min_conf =ifelse(!is.na(Min_conf), as.numeric(Min_conf), NA),
+                    Overlap = ifelse(!is.na(Overlap), as.numeric(Overlap), NA),
+                    Sensitivity = ifelse(!is.na(Sensitivity), as.numeric(Sensitivity), NA),
+                    Hz = ifelse(!is.na(Hz), as.numeric(Hz), NA),
+                    Sleep = ifelse(!is.na(Sleep), as.numeric(Sleep), NA),
+                    Rec = ifelse(!is.na(Rec), as.numeric(Rec), NA))
+
+    ## Transfer records to archive
+    file.df <- data.frame(
+      file = out[["File"]],
+      parent = stringr::str_split(out[["File"]][1], "extracted")[[1]][[1]],
+      child = sapply(out[["File"]], function(x) {
+        stringr::str_split(x, "extracted")[[1]][[2]]
+      })) %>%
+      dplyr::mutate(file.new = file.path(path2archive, child))
+
+    out <- out %>%
+      dplyr::mutate(File = file.df$file.new)
+
+    taxa <- unique(out$Taxon)
+
+    ## Attempt to create sub dirs for detected taxa
+    for (taxon in taxa) {
+      dir.create(file.path(path2archive, taxon), showWarnings = FALSE)
+    }
+
+    ## copy files to new location
+    ## check file exist first
+
+    file.check <- 0
+    checks <- sapply(file.df$file, file.exists) %>% as.vector()
+    if (any(checks == FALSE) & ! interactive()) {
+      stop("Files to copy not found")
+    } else if (any(checks == FALSE) & interactive()) {
+      message("Files not found at ", dirname(file.df$file[1]))
+      file.check <- utils::menu(c("Yes", "No"), title = "Do you want to provide a valid path?")
+      if (file.check == 1) {
+        file.check <- utils::menu(LETTERS[1:10], title = paste("Change drive letter to ...", ""))
+      } else {
+        stop("Processing stopped")
+      }
+    }
+
+    if (file.check != 0) {
+      message("Changing drive letter of file sources to ", LETTERS[file.check])
+      substr(file.df$file, 1, 1) <- LETTERS[file.check]
+    }
+
+    copy_results <- file.copy(
+      from = file.df$file,
+      to = file.df$file.new,
+      overwrite = FALSE,
+      copy.date = TRUE)
+
+    ## read db if existing ...
+    if (file.exists(db)) {
+      output2 <- out
+
+      db_old <- readxl::read_xlsx(path = db, sheet = 1)
+
+      if (any(duplicated(db_old))) warning("Database contains duplicates!")
+
+      db_new <- try(rbind(db_old, output2))
+      if (!methods::is(db_new, "try-error")) {
+        db_new <- dplyr::bind_rows(db_old, output2)
+      }
+
+      if (any(duplicated(db_new))) {
+        warning("Database already contains entries. Skip duplicates")
+        indices <- which(duplicated(db_new))
+        output2 <- output2[-(indices - nrow(db_old)),]
+      }
+
+      wb <- openxlsx2::wb_load(db)
+      wb <- openxlsx2::wb_add_data(
+        wb = wb,
+        sheet = 'Records',
+        x = output2,
+        col_names = FALSE,
+        start_row = nrow(openxlsx2::wb_read(db)) + 2
+      )
+      openxlsx2::wb_save(wb = wb, file = db, overwrite = TRUE)
+
+    } else {
+      openxlsx2::write_xlsx(x = out, file = db, overwrite = T, sheet = "Records", na = '')
+    }
+
+    ## replace links in BirdNET results file
+    wb <- openxlsx2::wb_load(BirdNET_results)
+
+    # Mon Jun 22 17:00:43 2026 ------------------------------
+    # Hyperlink currently failing
+    # wb <- openxlsx2::wb_add_formula(
+    #   wb = wb,
+    #   sheet = 'Records',
+    #   dims = openxlsx2::wb_dims(rows = 2:(nrow(folder.df) + 1), cols = 12),
+    #   x = paste0('HYPERLINK("', file.df$file.new, '","', basename(file.df$file.new), '")')
+    # )
+
+    ## insert in wb ...
+    wb <- openxlsx2::wb_add_data(
+      wb = wb,
+      sheet = "Records",
+      x =  file.df$file.new,
+      start_col = which(names(data_df) == "File"),
+      colNames = FALSE,
+      start_row  = 2)
+
+
+    openxlsx2::wb_save(wb, file = BirdNET_results, overwrite = TRUE)
+    reformat_db(path = db)
+    return(output)
 
   } else {
     message("No verified detections in ", BirdNET_results, "!")
@@ -233,134 +334,6 @@ BirdNET_archive_am <- function(
                       File = NA) %>%
       cbind(., data_meta)
   }
-
-  ## Transfer records to archive
-  file.df <- data.frame(
-    file = out[["File"]],
-    parent = stringr::str_split(out[["File"]][1], "extracted")[[1]][[1]],
-    child = sapply(out[["File"]], function(x) {
-      stringr::str_split(x, "extracted")[[1]][[2]]
-    })) %>%
-    dplyr::mutate(file.new = file.path(path2archive, child))
-
-  out <- out %>%
-    dplyr::mutate(File = file.df$file.new)
-
-  taxa <- unique(out$Taxon)
-
-  ## Attempt to create sub dirs for detected taxa
-  for (taxon in taxa) {
-    dir.create(file.path(path2archive, taxon), showWarnings = FALSE)
-  }
-
-  ## copy files to new location
-  ## check file exist first
-
-  file.check <- 0
-  checks <- sapply(file.df$file, file.exists) %>% as.vector()
-  if (any(checks == FALSE) & ! interactive()) {
-    stop("Files to copy not found")
-  } else if (any(checks == FALSE) & interactive()) {
-    cat("Files not found at", dirname(file.df$file[1]), "\n")
-    file.check <- utils::menu(c("Yes", "No"), title = "Do you want to provide a valid path?")
-    if (file.check == 1) {
-      file.check <- utils::menu(LETTERS[1:10], title = paste("Change drive letter to ...", ""))
-    } else {
-      stop("Processing stopped")
-    }
-  }
-
-  if (file.check != 0) {
-    cat("Changing drive letter of file sources to", LETTERS[file.check])
-    substr(file.df$file, 1, 1) <- LETTERS[file.check]
-  }
-
-  copy_results <- file.copy(
-    from = file.df$file,
-    to = file.df$file.new,
-    overwrite = FALSE,
-    copy.date = TRUE)
-
-  ## read db if existing
-  if (file.exists(db)) {
-    output2 <- out
-
-    ## read db to detect duplicates before writing ...
-    ## openxlsx does not handle format correctly ...
-    db_head <- readxl::read_xlsx(path = db, sheet = 1, n_max = 1)
-    db_old <- suppressWarnings(readxl::read_xlsx(path = db, sheet = 1, col_types = c(
-      'text', #Taxon
-      'text', #Detector
-      'date', #T1
-      'numeric', #Score
-      'text', #Comment
-      'text', #File
-      'text', #Location
-      'numeric', #Lat
-      'numeric', #Lon
-      'date', #From
-      'date', #To
-      'text', #Duration
-      'text', #Device
-      'text', #Micro
-      'numeric', #min_conf
-      'numeric', #overlap
-      'numeric', #sensitivity
-      'text', #slist
-      'text', #Device ID
-      'numeric',#hz
-      'text', #gain
-      'numeric',#sleep
-      'numeric',#rec
-      'text'#filter
-    )))
-
-    if (any(duplicated(db_old))) {
-      warning("Database contains duplicates!")
-      db_old[which(duplicated(db_old)),]
-    }
-
-    db_new <- suppressWarnings(try(rbind(db_old, output2), silent = TRUE))
-    if (!methods::is(db_new, "try-error")) {
-      db_new <- suppressWarnings(dplyr::bind_rows(db_old, output2))
-    }
-
-    if (any(duplicated(db_new))) {
-      warning("Database already contains entries. Skip duplicates")
-      indices <- which(duplicated(db_new))
-      output2 <- output2[-(indices - nrow(db_old)),]
-    }
-
-    wb <- openxlsx::loadWorkbook(db)
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = output2,
-                        colNames = FALSE,
-                        startRow = nrow(openxlsx::readWorkbook(db)) + 2)
-    openxlsx::saveWorkbook(wb, file = db, overwrite = TRUE)
-    out <- out
-    ## create if not ...
-  } else {
-    openxlsx::write.xlsx(x = out, file = db)
-  }
-
-  ## read df to add hyperlink
-  df <- readxl::read_xlsx(path = db, sheet = 1)
-
-  ## replace links in BirdNET results file
-  hLink.wav <- df$File
-  class(hLink.wav) <- "hyperlink"
-
-  wb <- openxlsx::loadWorkbook(db)
-  openxlsx::writeData(wb = wb,
-                      sheet = 1,
-                      x = hLink.wav,
-                      startCol = which(names(db_head) == 'File'),
-                      colNames = FALSE,
-                      startRow = 2)
-  openxlsx::saveWorkbook(wb, db, overwrite = TRUE)
-  #reformat_db(path = db)
-
   return(output)
 }
 
@@ -387,7 +360,7 @@ BirdNET_archive <- function(
     db = NULL) {
 
   ## binding for global variables to please checks ...
-  Verification <- Comment <- T1 <- Taxon <- Hour <- n <- . <- child <- NA
+  Verification <- folder.df <- Comment <- T1 <- Taxon <- Hour <- n <- . <- child <- NA
 
   if (!dir.exists(path2archive)) stop("provide valid path2archive")
   path2archive <- tools::file_path_as_absolute(path2archive)
@@ -558,7 +531,7 @@ BirdNET_archive <- function(
 
   ## read db if existing ...
   if (file.exists(db)) {
-    output2 <- output
+    output2 <- out
 
     ## read db to detect duplicates before writing ...
     ## openxlsx does not handle format correctly ...
@@ -577,33 +550,36 @@ BirdNET_archive <- function(
       output2 <- output2[-(indices - nrow(db_old)),]
     }
 
-    wb <- openxlsx::loadWorkbook(db)
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = output2,
-                        colNames = FALSE,
-                        startRow = nrow(openxlsx::readWorkbook(db)) + 2)
-    openxlsx::saveWorkbook(wb, file = db, overwrite = TRUE)
+    wb <- openxlsx2::wb_load(db)
+    wb <- openxlsx2::wb_add_data(
+      wb = wb,
+      sheet = 'Records',
+      x = output2,
+      col_names = FALSE,
+      start_row = nrow(openxlsx2::read_xlsx(db)) + 2)
+
+    openxlsx2::wb_save(wb = wb, file = db)
     ## create if not ...
   } else {
-    openxlsx::write.xlsx(x = output, file = db)
+    openxlsx2::write_xlsx(x = output, file = db, overwrite = T, , na = '')
   }
 
   ## replace links in BirdNET results file
-  hLink <- folder.df$file.new
-  class(hLink) <- "hyperlink"
+  # Mon Jun 22 17:01:34 2026 ------------------------------
+  # Check!
+  wb <- openxlsx2::wb_add_formula(
+    wb = wb,
+    sheet = 'Records',
+    dims = openxlsx2::wb_dims(rows = 2:(nrow(folder.df) + 1), cols = 12),
+    x = paste0('HYPERLINK("', folder.df$file.new, '","', basename(folder.df$file.new), '")'),
+    array = FALSE
+  )
 
-  wb <- openxlsx::loadWorkbook(BirdNET_results)
-  openxlsx::writeData(wb = wb,
-                      sheet = 1,
-                      x = hLink,
-                      startCol = 12,
-                      colNames = FALSE,
-                      startRow = 2)
-  openxlsx::saveWorkbook(wb, file = BirdNET_results, overwrite = TRUE)
+  openxlsx2::wb_save(wb, file = BirdNET_results)
 
   return(output)
 }
+
 #' Cleanup folder: \strong{This will delete all files!}
 #'
 #' @description
@@ -642,7 +618,6 @@ BirdNET_cleanup <- function(path = NULL, cleanup = FALSE) {
 #' @param nmax maximum number of segments per taxon. defaults to NULL
 #' @param sec seconds before and after target to extract
 #' @param hyperlink optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.
-#' @param spectro logical. export spectro using \code{\link[bioacoustics]{spectro}} defaults to FALSE
 #' @inheritParams BirdNET
 #' @export
 #'
@@ -652,8 +627,6 @@ BirdNET_extract <- function(path = NULL,
                             nmax = NULL,
                             sec = 1,
                             output = NULL,
-                            #approx_snr = FALSE,
-                            spectro = FALSE,
                             hyperlink = F,
                             model = c('BirdNET v2.4', 'Perch v2')) {
 
@@ -678,7 +651,6 @@ BirdNET_extract <- function(path = NULL,
   ## 1.) Check for BirdNET.xlsx and load if present
   if (!file.exists(file.path(path, my_xlsx))) stop(my_xlsx, " not found")
   xlsx <- readxl::read_xlsx(file.path(path, my_xlsx))
-  #xlsx_head <- readxl::read_xlsx(path = db, sheet = 1, n_max = 1)
 
   ## check if BirdNET.xlsx was already formatted with BirdNET_extract
   ## Attempt by all files unique and containing extracted in file name
@@ -724,11 +696,7 @@ BirdNET_extract <- function(path = NULL,
     }})
 
   ## 3.) Extract ...
-  if (isTRUE(spectro)) {
-    cat("Extract events and create spectros ...\n")
-  } else {
-    cat("Extract events ...\n")
-  }
+  message("Extract events")
   out <- pbapply::pbsapply(1:nrow(xlsx), function(r) {
 
     ## find wav file
@@ -755,7 +723,6 @@ BirdNET_extract <- function(path = NULL,
         trimws(stringr::str_replace_all(
           as.character(t1), c(":" = "", "-" = "", " " = "_"))), format))
 
-
     ## add buffer around event
     from = as.numeric(difftime(t1, t0, units = "secs")) - sec
     if (from < 0) from <- 0
@@ -773,92 +740,65 @@ BirdNET_extract <- function(path = NULL,
     tuneR::writeWave(
       object = event,
       filename = name)
-
-    if (isTRUE(spectro)) {
-      ## if stereo average to mon
-      if (isTRUE(event@stereo)) {
-        event <- tuneR::stereo(tuneR::mono(event, "both"),
-                               tuneR::mono(event, "both"))
-      }
-
-      # saves plot
-      dir.create(file.path(dirname(name), "png"), showWarnings = FALSE)
-      grDevices::png(
-        file.path(file.path(dirname(name), "png"),
-                  stringr::str_replace(basename(name), format, ".png")),
-        width = 1200, height = 430, res = 72)
-
-      seewave::spectro(wave = event,
-                       wl = 1024,
-                       grid = F,
-                       ovlp = 90,
-                       fastdisp = T,
-                       scale = F,
-                       flab = "",
-                       tlab = "",
-                       flim = c(2,8),
-                       colbg = "white",
-                       main = basename(name),
-                       palette = seewave::reverse.gray.colors.2)
-      grDevices::dev.off()
-    }
     return(name)
   })
 
   ## put hyperlink(s) in excel sheet?
-  if (isTRUE(hyperlink) & isFALSE(spectro)) {
+  if (isTRUE(hyperlink)) {
 
     ## open workbook as it is ...
-    wb <- openxlsx::loadWorkbook(file.path(path, my_xlsx))
+    wb <- openxlsx2::wb_load(file.path(path, my_xlsx))
 
-    ## create hyperlink ... check order?
-    wav.link <- out; class(wav.link) <- "hyperlink"
+    # Get number of rows/cols in the sheet
+    data <- openxlsx2::read_xlsx(file.path(path, my_xlsx), sheet = 'Records')
+    n_rows <- nrow(data) + 1   # +1 for header
+    n_cols <- ncol(data)
+
+    ## create hyperlink
+    urls_full     <- out
+    urls_short    <- basename(out)
 
     ## insert in wb ...
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = wav.link,
-                        startCol = 12,
-                        colNames = FALSE,
-                        startRow = 2)
-    openxlsx::saveWorkbook(wb, file.path(path, my_xlsx), overwrite = TRUE)
-  } else if (isTRUE(hyperlink) & isTRUE(spectro))  {
+    wb <- openxlsx2::wb_add_data(
+      wb = wb,
+      sheet = "Records",
+      x =  urls_full,
+      start_col = which(names(data) == "File"),
+      colNames = FALSE,
+      start_row  = 2)
 
+    ## insert in wb ...
+    wb <- openxlsx2::wb_add_formula(
+      wb = wb,
+      sheet = "Records",
+      dims = openxlsx2::wb_dims(rows = 2:(n_rows), cols = which(names(data) == "File")),
+      x = paste0('HYPERLINK("', urls_full, '","', urls_short, '")'),
+      array = FALSE)
+
+    openxlsx2::wb_save(wb = wb, file =  file.path(path, my_xlsx))
+  } else {
     ## open workbook as it is ...
-    wb <- openxlsx::loadWorkbook(file.path(path, my_xlsx))
+    wb <- openxlsx2::wb_load(file.path(path, my_xlsx))
 
-    ## create hyperlink ... check order?
-    wav.link <- out; class(wav.link) <- "hyperlink"
+    # Get number of rows/cols in the sheet
+    data <- openxlsx2::read_xlsx(file.path(path, my_xlsx), sheet = 'Records')
+    n_rows <- nrow(data) + 1   # +1 for header
+    n_cols <- ncol(data)
 
-    ## insert in wb ...
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = wav.link,
-                        startCol = 12,
-                        colNames = FALSE,
-                        startRow = 2)
-
-    ## create hyperlink ... check order?
-
-    ## check for correct format pattern
-    format <- tools::file_ext(out)
-
-    png.link <- data.frame(
-      png = file.path(file.path(dirname(out), "png"),
-                      stringr::str_replace(string = basename(out),
-                                           pattern = format,
-                                           replacement = "png")))
-    class(png.link$png) <- "hyperlink"
+    ## create hyperlink
+    urls_full     <- out
+    urls_short    <- basename(out)
 
     ## insert in wb ...
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = png.link,
-                        startCol = 13,
-                        colNames = TRUE,
-                        startRow = 1)
+    wb <- openxlsx2::wb_add_data(
+      wb = wb,
+      sheet = "Records",
+      x =  urls_full,
+      start_col = which(names(data) == "File"),
+      colNames = FALSE,
+      start_row  = 2)
 
-    openxlsx::saveWorkbook(wb, file.path(path, my_xlsx), overwrite = TRUE)
+    openxlsx2::wb_save(wb = wb, file =  file.path(path, my_xlsx))
   }
 
   ## Add information for validation of subsets
@@ -870,34 +810,30 @@ BirdNET_extract <- function(path = NULL,
     xlsx[["Comment"]][matching_rows] <- 1:length(matching_rows)
     ## select segments for validation ...
     picked_samples <- sample_rows(x = matching_rows)
-    # picked_samples <- ifelse(
-    #   test = length(matching_rows) == 1,
-    #   yes = matching_rows,
-    #   no = sample(x =  as.numeric(matching_rows),
-    #               size = ifelse(length(matching_rows) > 10, 10, length(matching_rows))))
     xlsx[["Quality"]][picked_samples] <- 'Validate !'
   }
 
   ## open workbook as it is ...
-  wb <- openxlsx::loadWorkbook(file.path(path, my_xlsx))
+  wb <- openxlsx2::wb_load(file.path(path, my_xlsx))
 
   ## insert in wb ...
-  openxlsx::writeData(wb = wb,
-                      sheet = 1,
-                      x =  xlsx[["Comment"]],
-                      startCol = 10,
-                      colNames = FALSE,
-                      startRow = 2)
+  wb <- openxlsx2::wb_add_data(
+    wb = wb,
+    sheet = 1,
+    x =  xlsx[["Comment"]],
+    start_col = which(names(data) == "Comment"),
+    colNames = FALSE,
+    start_row  = 2)
 
-  openxlsx::writeData(wb = wb,
-                      sheet = 1,
-                      x =  xlsx[["Quality"]],
-                      startCol = 9,
-                      colNames = FALSE,
-                      startRow = 2)
-  openxlsx::saveWorkbook(wb, file.path(path, my_xlsx), overwrite = TRUE)
+  wb <- openxlsx2::wb_add_data(
+    wb = wb,
+    sheet = 1,
+    x =  xlsx[["Quality"]],
+    start_col = which(names(data) == "Quality"),
+    colNames = FALSE,
+    start_row  = 2)
+  openxlsx2::wb_save(wb, file.path(path, my_xlsx), overwrite = TRUE)
   reformat_xlsx(path = path, model = model)
-
 }
 #' Visualise BirdNET results
 #'
@@ -908,7 +844,7 @@ BirdNET_extract <- function(path = NULL,
 BirdNET_figure <- function(path, taxa) {
 
   ## binding for global variables to please checks ...
-  mutate <- Taxon <- T1 <- CET <- Date <- Stunde <- sunrise <- sunset <- N <- NA
+  Taxon <- T1 <- CET <- Date <- Stunde <- sunrise <- sunset <- N <- NA
   ## retrieve lat, lon from Meta data if available, otherwise stick to defaults
   meta <- readxl::read_xlsx(path, "Meta")
   lat <- meta[["Lat"]]; lon <- meta[["Lon"]]
@@ -1008,7 +944,7 @@ BirdNET_hide <- function(path, hidden.path) {
 
   if (length(audio > 0)) {
     ## move files and keep a record
-    cat("Found", length(audio), " files that were already analysed\n")
+    message("Found", length(audio), " files that were already analysed")
     df <-  data.frame(from = file.path(path, audio),
                       to =  file.path(hidden.path, basename(audio)))
     utils::write.table(df, file = file.path(hidden.path, paste0(basename(path), ".txt")))
@@ -1037,17 +973,16 @@ BirdNET_unhide <- function(path, hidden.path) {
 #' @param recursive logical
 #' @export
 #'
-BirdNET_man_detec <- function(path, spectro = FALSE, recursive = FALSE) {
+BirdNET_man_detec <- function(path, recursive = FALSE) {
 
 
   ## check for manual detections
   Records <- BirdNET_labels2results(path = path, recursive = recursive)
 
   if (nrow(Records) >= 1) {
-    openxlsx::write.xlsx(x = Records, file = file.path(path, "BirdNET2.xlsx"), overwrite = T)
-    if (isTRUE(spectro)) warning("Due to an internal bug Spectro = TRUE is currently not supported!")
-    #BirdNET_extract2(path = path, spectro = spectro)
-    BirdNET_extract2(path = path, spectro = FALSE)
+    openxlsx2::write_xlsx(x = Records,
+                          file = file.path(path, "BirdNET2.xlsx"), overwrite = T, na = '')
+    BirdNET_extract2(path = path)
 
     ## now append to BirdNET.xlsx and delete BirdNET2.xlsx
     ## read db if existing ...
@@ -1086,13 +1021,14 @@ BirdNET_man_detec <- function(path, spectro = FALSE, recursive = FALSE) {
 
     if ("png" %in% names(db2)) class(db2$png) <- "hyperlink"
 
-    wb <- openxlsx::loadWorkbook(db1)
-    openxlsx::writeData(wb = wb,
-                        sheet = 1,
-                        x = db2,
-                        colNames = FALSE,
-                        startRow = db1_rows + 2)
-    openxlsx::saveWorkbook(wb, file = db1, overwrite = TRUE)
+    wb <- openxlsx2::wb_load(db1)
+    wb <- openxlsx2::wb_add_data(
+      wb = wb,
+      sheet = 1,
+      x = db2,
+      colNames = FALSE,
+      start_row  = db1_rows + 2)
+    openxlsx2::wb_save(wb, file = db1, overwrite = TRUE)
     unlink(file.path(path, "BirdNET2.xlsx"))
   }
 
@@ -1165,7 +1101,7 @@ BirdNET_results2txt <- function(path = NULL, recursive = FALSE, model = c('BirdN
   if (!dir.exists(path)) stop("provide valid path")
   model <- match.arg(model)
 
-  # Load existing workbook
+  # Load existing results.txt files
   if (model == 'BirdNET v2.4') {
     my_pattern    <- 'BirdNET.results.txt'
     my_replacement <- "BirdNET.labels.txt"
@@ -1367,7 +1303,10 @@ BirdNET_tidyup <- function(path, recursive, model = c('BirdNET v2.4', 'Perch v2'
                      ignore.case = T, recursive = recursive, full.names = T)
   wavs.size <- file.size(wavs)
 
-  if (any(wavs.size == 0)) unlink(wavs[wavs.size == 0])
+  if (any(wavs.size == 0)) {
+    message("Found empty sound files - unlink ", length(wavs[wavs.size == 0]), " files\n")
+    unlink(wavs[wavs.size == 0])
+  }
 }
 
 #' Cleanup taxon names to avoid problems when specifying path
@@ -1378,8 +1317,6 @@ BirdNET_tidyup <- function(path, recursive, model = c('BirdNET v2.4', 'Perch v2'
 #' @param path path
 #' @inheritParams BirdNET
 #' @keywords internal
-#' @import openxlsx
-#' @import readxl
 #'
 BirdNET_name_repair <- function(path, model = c('BirdNET v2.4', 'Perch v2')) {
 
@@ -1393,7 +1330,7 @@ BirdNET_name_repair <- function(path, model = c('BirdNET v2.4', 'Perch v2')) {
   }
 
   xlsx_path <- file.path(path, xlsx)
-  wb <- openxlsx::loadWorkbook(xlsx_path)
+  wb <- openxlsx2::wb_load(xlsx_path)
   df <- readxl::read_xlsx(xlsx_path)
 
   Taxon <- NA
@@ -1402,13 +1339,14 @@ BirdNET_name_repair <- function(path, model = c('BirdNET v2.4', 'Perch v2')) {
 
   if (nrow(check) > 1) {
     df[['Taxon']] <- gsub("/", "-", df[['Taxon']], fixed = TRUE)
-    openxlsx::writeData(wb,
-                        sheet = 1,
-                        x = df$Taxon,
-                        startCol = which(names(df) == "Taxon"),
-                        startRow = 2,
-                        colNames = FALSE)
-    openxlsx::saveWorkbook(wb, xlsx_path, overwrite = TRUE)
+    wb <- openxlsx2::wb_add_data(
+      wb,
+      sheet = 1,
+      x = df$Taxon,
+      start_col = which(names(df) == "Taxon"),
+      start_row  = 2,
+      colNames = FALSE)
+    openxlsx2::wb_save(wb, xlsx_path)
     return(data.frame(old = check[["Taxon"]],
                       new = gsub("/", "-", check[['Taxon']], fixed = TRUE)))
   } else {
@@ -1449,7 +1387,7 @@ BirdNET_table <- function(path = NULL, recursive = FALSE, model = c('BirdNET v2.
   if (length(BirdNET.results.files) >= 1) {
     # read audacity marks
     if (interactive()) {
-      message("Read ", model,  " results:\n")
+      message("Read ", model,  " results:")
       df <- pbapply::pblapply(BirdNET.results.files,
                               readr::read_delim,
                               delim = "\t",
@@ -1457,6 +1395,7 @@ BirdNET_table <- function(path = NULL, recursive = FALSE, model = c('BirdNET v2.
                               show_col_types = FALSE,
                               col_names = c("start", "end", "label")) %>%
         do.call("rbind",.)
+      message("Retrieved ", nrow(df), " events\n")
     } else {
       df <- lapply(BirdNET.results.files,
                    readr::read_delim,
@@ -1469,7 +1408,7 @@ BirdNET_table <- function(path = NULL, recursive = FALSE, model = c('BirdNET v2.
 
     ## split label into single variables
     df <- df %>%
-      mutate(
+      dplyr::mutate(
         species = stringr::str_extract(label, "^.*(?=\\s\\d{4}-\\d{2}-\\d{2})"),
         date    = as.Date(stringr::str_extract(label, "\\d{4}-\\d{2}-\\d{2}")),
         time    = as.POSIXct(stringr::str_extract(label, "\\d{2}:\\d{2}:\\d{2}"),
@@ -1493,11 +1432,11 @@ BirdNET_table <- function(path = NULL, recursive = FALSE, model = c('BirdNET v2.
     df[["species"]] <- factor(x = df[["species"]],
                               levels = unique(as.character(sort(df$species, decreasing = TRUE))))
 
-    return(list(records.all = output[,c("species", "date", "time")],
-                records.day = records.day,
-                records.hour = df))
-
+    results <- list(records.all = output[,c("species", "date", "time")],
+                    records.day = records.day,
+                    records.hour = df)
+  } else {
+    results <- list()
   }
+  return(results)
 }
-
-

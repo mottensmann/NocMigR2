@@ -11,7 +11,6 @@ BirdNET_extract2(
   nmax = NULL,
   sec = 1,
   output = NULL,
-  spectro = FALSE,
   hyperlink = T
 )
 }
@@ -27,8 +26,6 @@ BirdNET_extract2(
 \item{sec}{seconds before and after target to extract}
 
 \item{output}{path to write wav files}
-
-\item{spectro}{logical. export spectro using \code{\link[bioacoustics]{spectro}} defaults to FALSE}
 
 \item{hyperlink}{optional. Insert hyperlink to audio file in xlsx document. Only if records are not filtered.}
 }
