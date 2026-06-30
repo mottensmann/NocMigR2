@@ -1307,6 +1307,20 @@ BirdNET_tidyup <- function(path, recursive, model = c('BirdNET v2.4', 'Perch v2'
     message("Found empty sound files - unlink ", length(wavs[wavs.size == 0]), " files\n")
     unlink(wavs[wavs.size == 0])
   }
+
+  ## check for invalid RIFF file of type WAVE
+  riff.check <- data.frame(file = wavs, status = sapply(wavs, check_wav_header))
+  corrupt <- riff.check[riff.check$status == "invalid",]
+  if (length(corrupt) > 0) {
+    dest_dir <- file.path(path, "corrupted_waves")
+    dir.create(dest_dir, showWarnings = FALSE)
+    warning('Moving Invalid files to ', dest_dir, ':\n', corrupt[["file"]])
+    success <- file.copy(
+      from = corrupt[["file"]],
+      to = file.path(dest_dir, basename(corrupt[["file"]])),
+      overwrite = FALSE)
+    invisible(file.remove(corrupt[["file"]][success]))
+  }
 }
 
 #' Cleanup taxon names to avoid problems when specifying path

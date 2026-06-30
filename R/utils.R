@@ -1227,3 +1227,31 @@ segment_wave <- function(path,
   if (isFALSE(keep.input)) unlink(file.path(path, 'input'), recursive = T)
 }
 
+
+library(fs)
+
+#' Check for invalid RIFF file
+#'
+#' @param file wave file
+#' @keywords internal
+#'
+check_wav_header <- function(file) {
+  con <- file(file, "rb")
+  on.exit(close(con))
+
+  # Mindestens 44 Byte für Standard-WAV-Header nötig
+  header <- readBin(con, "raw", n = 12)
+
+  if (length(header) < 12) {
+    return("invalid")
+  }
+
+  riff <- rawToChar(header[1:4])
+  wave <- rawToChar(header[9:12])
+
+  if (riff != "RIFF" || wave != "WAVE") {
+    return("invalid")
+  }
+
+  return("ok")
+}
