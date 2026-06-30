@@ -39,9 +39,14 @@ BirdNET <- function(path = NULL,
   if (any(dirs2 == 'extracted')) {
     warning("Detected folder", dirs[which(dirs2 == "extracted")], ".Ignore all wave files in this folder!\n")
   }
+  if (any(dirs2 == 'corrupted_waves')) {
+    warning("Detected folder", dirs[which(dirs2 == "corrupted_waves")], ".Ignore all wave files in this folder!\n")
+  }
 
   ## exclude folder extracted if present
   wavs <- stringr::str_subset(wavs, "extracted", negate = TRUE)
+  wavs <- stringr::str_subset(wavs, "corrupted_waves", negate = TRUE)
+
 
   ## obtain duration of last file to get end of recording period
   last.audio <- tuneR::readWave(max(wavs), header = TRUE)
@@ -1311,10 +1316,10 @@ BirdNET_tidyup <- function(path, recursive, model = c('BirdNET v2.4', 'Perch v2'
   ## check for invalid RIFF file of type WAVE
   riff.check <- data.frame(file = wavs, status = sapply(wavs, check_wav_header))
   corrupt <- riff.check[riff.check$status == "invalid",]
-  if (length(corrupt) > 0) {
+  if (nrow(corrupt) > 0) {
     dest_dir <- file.path(path, "corrupted_waves")
     dir.create(dest_dir, showWarnings = FALSE)
-    warning('Moving Invalid files to ', dest_dir, ':\n', corrupt[["file"]])
+    warning('Moving Invalid files to ', dest_dir, ':\n', corrupt[["file"]], '\n')
     success <- file.copy(
       from = corrupt[["file"]],
       to = file.path(dest_dir, basename(corrupt[["file"]])),
