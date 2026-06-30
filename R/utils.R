@@ -170,6 +170,8 @@ total_duration <- function(path, format = "WAV", recursive = FALSE) {
   waves <- waves[!stringr::str_detect(waves, paste0("_extracted.", format,""))]
   waves <- waves[!stringr::str_detect(waves, "merged.events.WAV")]
   waves <- stringr::str_subset(waves, "extracted", negate = TRUE)
+  waves <- stringr::str_subset(waves, "corrupted_waves", negate = TRUE)
+
 
   duration <- sapply(waves, tuneR::readWave, header = T)
 
@@ -540,6 +542,8 @@ rename2DateTime <- function(input_dir, pattern = ".WAV") {
 
   # Filter out any files from the folder "extracted"
   wave_files <- wave_files[!grepl("extracted/", wave_files)]
+  wave_files <- wave_files[!grepl("corrupted_waves/", wave_files)]
+
 
   ## Retrieve date & time
   files_new <- substr(wave_files, nchar(wave_files) - 14 - nchar(pattern), nchar(wave_files))

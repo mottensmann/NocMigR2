@@ -39,9 +39,14 @@ BirdNET <- function(path = NULL,
   if (any(dirs2 == 'extracted')) {
     warning("Detected folder", dirs[which(dirs2 == "extracted")], ".Ignore all wave files in this folder!\n")
   }
+  if (any(dirs2 == 'corrupted_waves')) {
+    warning("Detected folder", dirs[which(dirs2 == "corrupted_waves")], ".Ignore all wave files in this folder!\n")
+  }
 
   ## exclude folder extracted if present
   wavs <- stringr::str_subset(wavs, "extracted", negate = TRUE)
+  wavs <- stringr::str_subset(wavs, "corrupted_waves", negate = TRUE)
+
 
   ## obtain duration of last file to get end of recording period
   last.audio <- tuneR::readWave(max(wavs), header = TRUE)
