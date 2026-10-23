@@ -717,3 +717,84 @@ BirdNET_archive_checks <- function(data) {
     message('Archive complete. All files found')
   }
 }
+
+#' Repair formatting and hyperlinks in BirdNET.results.xlsx
+#'
+#' @param xlsx path to BirdNET.results.xlsx
+#' @import openxlsx2
+#'
+#' @export
+BirdNET_xlsx_repair <- function(xlsx) {
+
+  Taxon <- File <- NA
+
+  ## checks function call
+  if (!file.exists(xlsx)) stop("provide valid xlsx path")
+
+  ## reconstruct path
+  path <- tools::file_path_as_absolute(xlsx) |>
+    dirname()
+
+  wb <- openxlsx2::wb_load(xlsx)
+
+  ## Get data for dimensions --
+  data <- openxlsx2::wb_read(
+    xlsx,
+    show_hyperlinks = TRUE,
+    sheet = "Records")
+  n_rows <- nrow(data) + 1
+  n_cols <- ncol(data)
+
+  if (all(is.na(data[["File"]]))) {
+    stop('Colum "File" formated as hyperlink but no cached result.
+         Open and save file in Excel or LibreOffice and try again')
+  }
+
+  ## Add filter to header row --
+  wb <- openxlsx2::wb_add_filter(wb,
+                                 sheet = "Records",
+                                 rows  = 1,
+                                 cols  = 1:n_cols)
+
+  ## Freeze first row --
+  wb <- openxlsx2::wb_freeze_pane(wb,
+                                  sheet            = "Records",
+                                  first_active_row = 2)
+
+  ## recreate links
+  data <- data |>
+    dplyr::mutate(File = file.path(path, "extracted", Taxon, basename(File)))
+
+  ## Hyperlink --
+  hyperlink_col <- which(names(data) == "File")
+  urls_full     <- data[["File"]]
+  urls_short    <- basename(urls_full)
+
+  wb <- openxlsx2::wb_add_formula(
+    wb, sheet = "Records",
+    dims = openxlsx2::wb_dims(rows = 2:n_rows, cols = hyperlink_col),
+    x = paste0('HYPERLINK("', urls_full, '","', urls_short, '")'),
+    array = FALSE
+  )
+
+  ## Auto adjust column width --
+  wb <- openxlsx2::wb_set_col_widths(wb = wb, sheet = "Records",
+                                     cols = 1:n_cols, widths = "auto")
+
+  ## Add borders to all cells --
+  black <- openxlsx2::wb_color(name = "black")
+
+  wb <- openxlsx2::wb_add_border(
+    wb, sheet = "Records",
+    dims          = openxlsx2::wb_dims(rows = 1:n_rows, cols = 1:n_cols),
+    bottom_border = 'thick', bottom_color = black,
+    left_border   = 'thin', left_color    = black,
+    top_border    = 'thick', top_color    = black,
+    right_border  = 'thin', right_color   = black,
+    inner_hgrid   = "thin", inner_hcolor  = black,
+    inner_vgrid   = "thin", inner_vcolor  = black
+  )
+
+  openxlsx2::wb_save(wb, file = path, overwrite = TRUE)
+
+}
