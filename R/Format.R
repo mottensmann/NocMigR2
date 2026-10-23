@@ -9,45 +9,58 @@ reformat_db <- function(path) {
 
   wb <- openxlsx2::wb_load(path)
 
-  # Get data for dimensions
-  data <- openxlsx2::wb_read(path, sheet = "Records")
+  ## Get data for dimensions --
+  data <- openxlsx2::wb_read(
+    path,
+    show_hyperlinks = TRUE,
+    sheet = "Records")
   n_rows <- nrow(data) + 1
   n_cols <- ncol(data)
 
-  # Auto column width
-  wb <- openxlsx2::wb_set_col_widths(wb = wb, sheet = "Records",
-                                     cols = 1:n_cols, widths = "auto")
+  if (all(is.na(data[["File"]]))) {
+    stop('Colum "File" formated as hyperlink but no cached result.
+         Open and save file in Excel or LibreOffice and try again')
+  }
 
-  # Add borders to all cells
-  message("Add border to cells ...")
-  border_style <- openxlsx2::wb_get_base_font(wb)
-  wb <- openxlsx2::wb_add_border(
-    wb, sheet = "Records",
-    dims = openxlsx2::wb_dims(rows = 1:n_rows, cols = 1:n_cols),
-    bottom_border = 'thin', bottom_color = openxlsx2::wb_color(name = 'black'),
-    left_border = 'thin', left_color = openxlsx2::wb_color(name = 'black'),
-    top_border = 'thin', top_color = openxlsx2::wb_color(name = 'black'),
-    right_border = 'thin', right_color = openxlsx2::wb_color(name = 'black')
-  )
+  ## Add filter to header row --
+  wb <- openxlsx2::wb_add_filter(wb,
+                                 sheet = "Records",
+                                 rows  = 1,
+                                 cols  = 1:n_cols)
 
-  # Add filter to header row
-  wb <- openxlsx2::wb_add_filter(wb, sheet = "Records",
-                                 rows = 1, cols = 1:n_cols)
-
-  # Freeze first row
-  wb <- openxlsx2::wb_freeze_pane(wb, sheet = "Records", first_active_row = 2)
-
-  # Hyperlink
+  ## Freeze first row --
+  wb <- openxlsx2::wb_freeze_pane(wb,
+                                  sheet            = "Records",
+                                  first_active_row = 2)
+  ## Hyperlink --
   hyperlink_col <- which(names(data) == "File")
   urls_full     <- data[["File"]]
   urls_short    <- basename(urls_full)
 
   wb <- openxlsx2::wb_add_formula(
     wb, sheet = "Records",
-    dims = openxlsx2::wb_dims(rows = 2:(n_rows), cols = hyperlink_col),
+    dims = openxlsx2::wb_dims(rows = 2:n_rows, cols = hyperlink_col),
     x = paste0('HYPERLINK("', urls_full, '","', urls_short, '")'),
     array = FALSE
   )
+
+  ## Auto adjust column width --
+  wb <- openxlsx2::wb_set_col_widths(wb = wb, sheet = "Records",
+                                     cols = 1:n_cols, widths = "auto")
+
+  ## Add borders to all cells --
+  ## Add borders to all cells --
+  black <- openxlsx2::wb_color(name = "black")
+
+  wb <- openxlsx2::wb_add_border(
+    wb, sheet = "Records",
+    dims          = openxlsx2::wb_dims(rows = 1:n_rows, cols = 1:n_cols),
+    bottom_border = 'thick', bottom_color = black,
+    left_border   = 'thin', left_color    = black,
+    top_border    = 'thick', top_color    = black,
+    right_border  = 'thin', right_color   = black,
+    inner_hgrid   = "thin", inner_hcolor  = black,
+    inner_vgrid   = "thin", inner_vcolor  = black)
 
   openxlsx2::wb_save(wb, file = path, overwrite = TRUE)
 }
@@ -87,17 +100,6 @@ reformat_xlsx <- function(path, model = c('BirdNET v2.4', 'Perch v2')) {
     # Auto column width
     # message("set colum width")
     wb$set_col_widths(sheet = sh, cols = 1:n_cols, widths = "auto")
-
-    # Add borders to all cells
-    # message("Add borders")
-    # wb <- openxlsx2::wb_add_border(
-    #   wb = wb,
-    #   sheet = sh,
-    #   dims = openxlsx2::wb_dims(rows = 1:n_rows, cols = 1:n_cols),
-    #   bottom_border = 'thin', bottom_color = openxlsx2::wb_color(name = 'black'),
-    #   left_border = 'thin', left_color = openxlsx2::wb_color(name = 'black'),
-    #   top_border = 'thin', top_color = openxlsx2::wb_color(name = 'black'),
-    #   right_border = 'thin', right_color = openxlsx2::wb_color(name = 'black'))
 
     # Add filter to header row
     #message("Add filter")
