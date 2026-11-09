@@ -662,6 +662,9 @@ BirdNET_archive_repair <- function(path, path2archive) {
   data <- data |>
     dplyr::mutate(File = file.path(path2archive, Taxon, basename(File)))
 
+  ## check for files
+  archive_checks <- BirdNET_archive_checks(data)
+
   ## Hyperlink --
   hyperlink_col <- which(names(data) == "File")
   urls_full     <- data[["File"]]
@@ -693,7 +696,7 @@ BirdNET_archive_repair <- function(path, path2archive) {
   )
 
   openxlsx2::wb_save(wb, file = path, overwrite = TRUE)
-
+  if (length(archive_checks) != 0) return(archive_checks)
 }
 
 #' Check all linked wav files exist in the archive
@@ -704,18 +707,29 @@ BirdNET_archive_repair <- function(path, path2archive) {
 BirdNET_archive_checks <- function(data) {
 
   Taxon <- File <- T1 <- Exists <- NA
+  out <- list(duplicated = data.frame(), missing = data.frame())
 
+  ## Check for duplicates
+  if (any(duplicated(data))) {
+    warning("Database contains duplicates!")
+    data_duplicated <- data[duplicated(data) | duplicated(data, fromLast = TRUE), ]
+    out[['duplicated']] <- data_duplicated
+  }
 
   data <- data |>
     dplyr::select(c(Taxon, T1, File)) |>
     dplyr::mutate(Exists = file.exists(File))
   if (any(data[["Exists"]] == FALSE)) {
-    out <- dplyr::filter(data, Exists == FALSE)
+    missing_files <- dplyr::filter(data, Exists == FALSE)
     warning('Some file are missing in the archive. Check output for details')
-    return(out)
+    out[['missing']] <- missing_files
   } else {
     message('Archive complete. All files found')
   }
+  if (nrow(out[["duplicated"]]) == 0) out[["duplicated"]] <- NULL
+  if (nrow(out[["missing"]]) == 0)    out[["missing"]] <- NULL
+
+  if (length(out) != 0) return(out)
 }
 
 #' Repair formatting and hyperlinks in BirdNET.results.xlsx
