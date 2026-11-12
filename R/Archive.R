@@ -129,12 +129,13 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db) {
       }
 
       if (nrow(db_import) > 0) {
+        message('adding ', nrow(db_import), ' records')
         wb <- openxlsx2::wb_load(db)
         wb <- openxlsx2::wb_add_data(wb        = wb,
                                      sheet     = 'Records',
                                      x         = db_import,
                                      col_names = FALSE,
-                                     start_row = nrow(openxlsx2::wb_read(db)) + 2)
+                                     start_row = nrow(openxlsx2::wb_read(db, 'Records')) + 2)
         openxlsx2::wb_save(wb = wb, file = db, overwrite = TRUE)
       }
 
@@ -168,6 +169,7 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db) {
       cbind(., data_meta)
   }
   reformat_db(path = db)
+  BirdNET_archive_repair(path = db, path2archive = path2archive)
   return(output)
 }
 
