@@ -15,8 +15,7 @@
 BirdNET_archive_pam <- function(BirdNET_results, path2archive, db.xlsx, db.gpkg = NULL) {
 
   ## binding for global variables to please checks ...
-  Verification <- Comment <- Min_conf <- Overlap <- Sensitivity <- Hz <-
-    Sleep <- Rec <- . <- child <- NA
+  Verification <- Comment <- Min_conf <- Overlap <- Sensitivity <- Hz <- File <- Sleep <- Rec <- . <- child <- NA
 
   ## Checks --
   if (!dir.exists(path2archive)) {
@@ -44,9 +43,7 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db.xlsx, db.gpkg 
         'text',    #Quality
         'text',    #Comment
         'date',    #T0
-        'text',     #File
-        'date', #ctime
-        'date' #mtime
+        'text'     #File
       ))) |>
       ## select verified detections
       dplyr::filter(Verification %in% c("T", "TRUE", "true postive")) |>
@@ -67,7 +64,8 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db.xlsx, db.gpkg 
         Sleep       = ifelse(!is.na(Sleep),       as.numeric(Sleep),       NA),
         Rec         = ifelse(!is.na(Rec),         as.numeric(Rec),         NA),
         CTIME       = Sys.time(),
-        MTIME       = Sys.time())
+        MTIME       = Sys.time(),
+        FilePath    = File)
   }
 
   ## Prepare Archive  --
@@ -696,6 +694,7 @@ BirdNET_archive_repair <- function(path, path2archive) {
 
   ## Hyperlink --
   hyperlink_col <- which(names(data) == "File")
+  hyperlink_col2 <- which(names(data) == "FilePath")
   urls_full     <- data[["File"]]
   urls_short    <- basename(urls_full)
 
@@ -703,6 +702,12 @@ BirdNET_archive_repair <- function(path, path2archive) {
     wb, sheet = "Records",
     dims = openxlsx2::wb_dims(rows = 2:n_rows, cols = hyperlink_col),
     x = paste0('HYPERLINK("', urls_full, '","', urls_short, '")'),
+    array = FALSE
+  )
+  wb <- openxlsx2::wb_add_formula(
+    wb, sheet = "Records",
+    dims = openxlsx2::wb_dims(rows = 2:n_rows, cols = hyperlink_col2),
+    x = paste0('HYPERLINK("', urls_full, '","', urls_full, '")'),
     array = FALSE
   )
 
