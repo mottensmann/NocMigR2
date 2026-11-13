@@ -4,19 +4,17 @@
 \alias{BirdNET_archive_pam}
 \title{Archive validated records of PAM recordings}
 \usage{
-BirdNET_archive_pam(BirdNET_results, path2archive, db)
+BirdNET_archive_pam(BirdNET_results, path2archive, db.xlsx, db.gpkg = NULL)
 }
 \arguments{
 \item{BirdNET_results}{path to verified BirdNET.xlsx file}
 
 \item{path2archive}{path to archive audio data}
 
-\item{db}{local database (.xlsx) to which verified records are added}
+\item{db.xlsx}{local database (.xlsx) to which verified records are added}
+
+\item{db.gpkg}{local database (.gpkg) to which verified records are added}
 }
 \description{
-Archive validated records of PAM recordings
-}
-\details{
-(1) Load table containing validated data --> xlsx spreadsheet
-(2) Copy extracted events for future reference to a local database, distinguishing between true and false positives (unverified records are ignored)
+Validated records form PAM sessions are selected from analysis file ('BirdNET.xlsx') and copied to a continously growing data base along with meta-data and audio records (.wav). Events that were falsified or not validated are ignored and remaining only in the source file ('BirdNET.xlsx').
 }

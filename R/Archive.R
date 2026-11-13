@@ -1,14 +1,18 @@
 #' Archive validated records of PAM recordings
-#' @details
-#' (1) Load table containing validated data --> xlsx spreadsheet
-#' (2) Copy extracted events for future reference to a local database, distinguishing between true and false positives (unverified records are ignored)
-
+#'
+#' @description
+#' Validated records form PAM sessions are selected from analysis file ('BirdNET.xlsx') and copied to a continously growing data base along with meta-data and audio records (.wav). Events that were falsified or not validated are ignored and remaining only in the source file ('BirdNET.xlsx').
+#'
 #' @param BirdNET_results path to verified BirdNET.xlsx file
 #' @param path2archive path to archive audio data
-#' @param db local database (.xlsx) to which verified records are added
+#' @param db.xlsx local database (.xlsx) to which verified records are added
+#' @param db.gpkg local database (.gpkg) to which verified records are added
+#' @importFrom sf st_as_sf
+#' @importFrom sf st_write
+
 #' @export
 #'
-BirdNET_archive_pam <- function(BirdNET_results, path2archive, db) {
+BirdNET_archive_pam <- function(BirdNET_results, path2archive, db.xlsx, db.gpkg = NULL) {
 
   ## binding for global variables to please checks ...
   Verification <- Comment <- Min_conf <- Overlap <- Sensitivity <- Hz <-
@@ -40,7 +44,9 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db) {
         'text',    #Quality
         'text',    #Comment
         'date',    #T0
-        'text'     #File
+        'text',     #File
+        'date', #ctime
+        'date' #mtime
       ))) |>
       ## select verified detections
       dplyr::filter(Verification %in% c("T", "TRUE", "true postive")) |>
@@ -59,7 +65,9 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db) {
         Sensitivity = ifelse(!is.na(Sensitivity), as.numeric(Sensitivity), NA),
         Hz          = ifelse(!is.na(Hz),          as.numeric(Hz),          NA),
         Sleep       = ifelse(!is.na(Sleep),       as.numeric(Sleep),       NA),
-        Rec         = ifelse(!is.na(Rec),         as.numeric(Rec),         NA))
+        Rec         = ifelse(!is.na(Rec),         as.numeric(Rec),         NA),
+        CTIME       = Sys.time(),
+        MTIME       = Sys.time())
   }
 
   ## Prepare Archive  --
@@ -110,11 +118,11 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db) {
       overwrite = FALSE,
       copy.date = TRUE)
 
-    ## Add records to db --
-    if (file.exists(db)) {
+    ## Add records to db.xlsx --
+    if (file.exists(db.xlsx)) {
       db_import <- data_df
 
-      db_df <- readxl::read_xlsx(path = db, sheet = 'Records')
+      db_df <- readxl::read_xlsx(path = db.xlsx, sheet = 'Records')
       if (any(duplicated(db_df))) warning("Database contains duplicates!")
 
       db_merged <- try(rbind(db_df, db_import))
@@ -130,18 +138,38 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db) {
 
       if (nrow(db_import) > 0) {
         message('adding ', nrow(db_import), ' records')
-        wb <- openxlsx2::wb_load(db)
+        wb <- openxlsx2::wb_load(db.xlsx)
         wb <- openxlsx2::wb_add_data(wb        = wb,
                                      sheet     = 'Records',
                                      x         = db_import,
                                      col_names = FALSE,
-                                     start_row = nrow(openxlsx2::wb_read(db, 'Records')) + 2)
-        openxlsx2::wb_save(wb = wb, file = db, overwrite = TRUE)
+                                     start_row = nrow(openxlsx2::wb_read(db.xlsx, 'Records')) + 2)
+        openxlsx2::wb_save(wb = wb, file = db.xlsx, overwrite = TRUE)
       }
 
-      ## create db if not existing --
+      ## create db.xlsx if not existing --
     } else {
-      openxlsx2::write_xlsx(x = db_import, file = db, overwrite = T, sheet = "Records", na = '')
+      openxlsx2::write_xlsx(x = db_import, file = db.xlsx, overwrite = T, sheet = "Records", na = '')
+    }
+
+    ## gpkg georeferencing
+    if (!is.null(db.gpkg)) {
+      db_import_sf <- sf::st_as_sf(db_import, coords = c("Lon", "Lat"), crs = "EPSG:4326")
+
+     if (file.exists(db.gpkg)) {
+       db.gpkg <- tools::file_path_as_absolute(db.gpkg)
+       sf::st_write(db_import_sf,
+                    dsn = db.gpkg,
+                    layer = 'Records',
+                    layer_options = "OVERWRITE=FALSE",
+                    append = TRUE)
+     } else if (!file.exists(db.gpkg)) {
+       sf::st_write(db_import_sf,
+                    dsn = db.gpkg,
+                    layer = 'Records',
+                    layer_options = "OVERWRITE=FALSE",
+                    append = FALSE)
+     }
     }
 
     ## replace links in (old) BirdNET results file --
@@ -168,8 +196,8 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db) {
                          File = NA) %>%
       cbind(., data_meta)
   }
-  reformat_db(path = db)
-  BirdNET_archive_repair(path = db, path2archive = path2archive)
+  reformat_db(path = db.xlsx)
+  BirdNET_archive_repair(path = db.xlsx, path2archive = path2archive)
   return(output)
 }
 
@@ -654,7 +682,6 @@ BirdNET_archive_repair <- function(path, path2archive) {
                                  sheet = "Records",
                                  rows  = 1,
                                  cols  = 1:n_cols)
-
   ## Freeze first row --
   wb <- openxlsx2::wb_freeze_pane(wb,
                                   sheet            = "Records",
