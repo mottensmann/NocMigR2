@@ -99,6 +99,7 @@ BirdNET <- function(path = NULL,
     meta[["From"]] <- from; meta[["To"]] <- to; meta[["Duration"]] <- duration
 
     if (isTRUE(am_config)) {
+      ## Check: AudioMoth
       if (file.exists(file.path(path, 'CONFIG.txt'))) {
         am <- audiomothConfig(filename = file.path(path, 'CONFIG.txt'))
         meta <- meta %>%
@@ -109,6 +110,18 @@ BirdNET <- function(path = NULL,
             Sleep = trimws(am$Value[am$Key == 'Sleep duration (s)']),
             Rec = trimws(am$Value[am$Key == 'Recording duration (s)']),
             Filter = trimws(am$Value[am$Key == 'Filter']))
+        ## check: SongMeter -- diagnosed by summary.txt file
+      } else if (length(list.files(path, '_Summary.txt')) == 1) {
+        ## read GUANO meta_data
+        gm <- guano(file = wavs[1])
+        meta <- meta %>%
+          dplyr::mutate(
+            `Device ID` = gm[["Serial"]],
+            Hz          = gm[["Samplerate"]],
+            Gain        = jsonlite::fromJSON(gm[["WA|Song Meter|Audio settings"]])[["gain"]],
+            Sleep       = NA,
+            Rec         = NA,
+            Filter      = NA)
       } else {
         meta <- meta %>%
           dplyr::mutate(
