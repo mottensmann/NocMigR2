@@ -111,9 +111,9 @@ BirdNET <- function(path = NULL,
             Rec = trimws(am$Value[am$Key == 'Recording duration (s)']),
             Filter = trimws(am$Value[am$Key == 'Filter']))
         ## check: SongMeter -- diagnosed by summary.txt file
-      } else if (length(list.files(path, '_Summary.txt')) == 1) {
+      } else if (length(list.files(path, pattern = '_Summary.txt')) == 1) {
         ## read GUANO meta_data
-        gm <- guano(file = wavs[1])
+        gm <- guano(file = names(wavs[1]))
         meta <- meta %>%
           dplyr::mutate(
             `Device ID` = gm[["Serial"]],
