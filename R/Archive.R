@@ -54,6 +54,10 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db.xlsx, db.gpkg 
 
     ### Append meta data --
     data_meta <- readxl::read_xlsx(BirdNET_results, sheet = "Meta")
+
+    req_cols <- c('Min_conf', 'Overlap', 'Sensitivity', 'Hz', 'Gain', 'Sleep', 'Rec')
+    data_meta[,req_cols[!req_cols %in% names(data_meta)]] <- NA
+
     data_df <- cbind(data_df, data_meta) |>
       ## format vars
       dplyr::mutate(
