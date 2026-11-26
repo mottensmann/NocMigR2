@@ -61,6 +61,7 @@ BirdNET_archive_pam <- function(BirdNET_results, path2archive, db.xlsx, db.gpkg 
         Overlap     = ifelse(!is.na(Overlap),     as.numeric(Overlap),     NA),
         Sensitivity = ifelse(!is.na(Sensitivity), as.numeric(Sensitivity), NA),
         Hz          = ifelse(!is.na(Hz),          as.numeric(Hz),          NA),
+        Gain        = ifelse(!is.na(Gain),        as.character(Gain),      NA),
         Sleep       = ifelse(!is.na(Sleep),       as.numeric(Sleep),       NA),
         Rec         = ifelse(!is.na(Rec),         as.numeric(Rec),         NA),
         CTIME       = Sys.time(),
